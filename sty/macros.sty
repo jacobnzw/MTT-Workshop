@@ -1,0 +1,344 @@
+\ProvidesPackage{phdmacros}
+\RequirePackage{physics}
+\RequirePackage{xparse}
+
+
+% TODO and other notes
+\DeclareDocumentCommand \note 		{ m }{ \textcolor{OrangeRed}{\ \\ \emph{\textbf{(NOTE)}} #1}\ \\ }
+
+% MATH OPERATORS ===============================================================
+\DeclareMathOperator*{\argmin}{ \arg\min }
+\DeclareMathOperator{\atantwo}{\mathrm{atan2}}
+\DeclareMathOperator{\sign}{\mathrm{sign}}
+\DeclareMathOperator{\vect}{vec}
+\DeclareMathOperator{\pdeg}{pdeg}
+
+% BASIC MACROS =================================================================
+% Bold vector and matrix
+\DeclareDocumentCommand \vb{ s m } {
+	\IfBooleanTF #1 {
+		\bm{\lowercase{#2}}
+	}{
+		\bm{\mathbf{\lowercase{#2}}}
+	}
+}
+\DeclareDocumentCommand \mb { s m } {
+	\IfBooleanTF #1 {
+		\bm{\uppercase{#2}}
+	}{
+		\bm{\mathbf{\uppercase{#2}}}
+	}
+}
+% Matrix inverse and transpose
+\DeclareDocumentCommand \I		{}{ ^{-1} }
+\DeclareDocumentCommand \T		{}{ ^{\top} }
+% Diagonal matrix
+\DeclareDocumentCommand \diag 	{ l m }{ \mathrm{diag}\pqty#1{\, #2 \,} }
+% Unit matrix
+\DeclareDocumentCommand \eye 	{ }{ \mb{I} }
+% zero vector
+\DeclareDocumentCommand \vzero  { }{ \vb{0} }
+% elementary vector
+\DeclareDocumentCommand \eVec  	{ }{ \vb{e} }
+% unit vector
+\DeclareDocumentCommand \uVec  	{ }{ \vb{1} }
+% column operator
+\DeclareDocumentCommand \col  	{ m m }{ \bqty{#1}_{*#2} }
+% Integral sign and differential
+\DeclareDocumentCommand \integ 	{ O{} O{} }{ \int\limits_{#1}^{#2}\! }
+\DeclareDocumentCommand \iinteg { O{} O{} }{ \iint\limits_{#1}^{#2}\! }
+\DeclareDocumentCommand \iiinteg{ O{} O{} }{ \iiint\limits_{#1}^{#2}\! }
+\DeclareDocumentCommand \dx 	{ O{x} }{ \,\mathrm{d}#1 }
+% set differential (in RFS theory)
+\DeclareDocumentCommand \dsx	{ O{X} }{ \mathrm{\delta}#1 }
+% Expectation, variance and covariance
+\DeclareDocumentCommand \E 		{ O{} l m }{ \mathbb{E}_{#1}\bqty#2{ #3 } }
+\DeclareDocumentCommand \V 		{ O{} l m }{ \mathbb{V}_{#1}\bqty#2{ #3 } }
+\DeclareDocumentCommand \Cov 	{ O{} l m }{ \mathbb{C}_{#1}\bqty#2{ #3 } }
+% Kullback-Leibler divergence
+\DeclareDocumentCommand \KL 	{ m m }{ \mathbb{KL} \bqty{\left. #1 \,\middle\|\, #2 \right.} }
+% Density of Gaussian, Student's t, Gamma and Inverse Gamma variable
+\DeclareDocumentCommand \N 		{ s O{\vb{x}} O{\vb{0}} O{\eye} }
+{
+	\IfBooleanTF{#1}{
+		#2\sim\mathrm{N}\pqty{ #3,\, #4 }
+	}{
+		\mathrm{N}\pqty{\left. #2 \,\middle\vert\, #3,\, #4 \right.}
+	}
+}
+\DeclareDocumentCommand \St 	{ s O{\vb{x}} O{\vb{0}} O{\eye} O{\nu} }
+{
+	\IfBooleanTF{#1}{
+		#2\sim\mathrm{St}\pqty{#3,\, #4,\, #5}
+	}{
+		\mathrm{St}\pqty{\left. #2 \,\middle\vert\, #3,\, #4,\, #5 \right.}
+	}
+}
+\DeclareDocumentCommand \G 		{ s O{s} O{\alpha} O{\beta} }
+{
+	\IfBooleanTF{#1}{
+		#2\sim\mathrm{G}\pqty{ #3,\, #4 }
+	}{
+		\mathrm{G}\pqty{\left. #2 \,\middle\vert\, #3,\, #4 \right.}
+	}
+}
+\DeclareDocumentCommand \IG 	{ s O{s} O{\alpha} O{\beta} }
+{
+	\IfBooleanTF{#1}{
+		#2\sim\mathrm{IG}\pqty{ #3,\, #4 }
+	}{
+		\mathrm{IG}\pqty{\left. #2 \,\middle\vert\, #3,\, #4 \right.}
+	}
+}
+% conditional probability density function
+\DeclareDocumentCommand \pdfc	{ O{p} m m }
+{
+		#1\pqty{\left. #2 \,\middle\vert\, #3 \right.} 
+}
+% STATE ESTIMATION =============================================================
+% time index and final time index
+\DeclareDocumentCommand	\tind		{ }{ k }
+\DeclareDocumentCommand	\Tind		{ }{ K }
+% general nonlinear fcn, system dynamics and measurement fcn
+\DeclareDocumentCommand \nlFcn 		{ s }{ \IfBooleanTF{#1}{g}{\vb{g}} }
+\DeclareDocumentCommand \stFcn		{  }{ \vb{f} }
+\DeclareDocumentCommand \msFcn		{  }{ \vb{h} }
+% Jacobian
+\DeclareDocumentCommand \jacb 		{ m }{ \mb{g}\pqty{#1} }
+% state and measurement variables
+\DeclareDocumentCommand \stVar 		{ s }{ \IfBooleanTF{#1}{x}{\vb{x}} }
+\DeclareDocumentCommand \msVar		{ s }{ \IfBooleanTF{#1}{z}{\vb{z}} }
+% state and measurement noise
+\DeclareDocumentCommand \stNoise	{ s }{ \IfBooleanTF{#1}{q}{\vb{q}} }  % TODO rename to \snVar, \stnVar
+\DeclareDocumentCommand \msNoise	{ s }{ \IfBooleanTF{#1}{r}{\vb{r}} }
+% state and measurement noise covariances
+\DeclareDocumentCommand \stNoiseCov	{ s }{ \IfBooleanTF{#1}{\sigma^2_q}{\mb{Q}} }
+\DeclareDocumentCommand \msNoiseCov	{ s }{ \IfBooleanTF{#1}{\sigma^2_r}{\mb{R}} }
+% state and measurement mean, covariance and cross-covariance
+\DeclareDocumentCommand \stMean		{   }{ \vb{m}^x }
+\DeclareDocumentCommand \msMean		{   }{ \vb{m}^z }
+\DeclareDocumentCommand \stCov		{   }{ \mb{P}^x }
+\DeclareDocumentCommand \stMsCov	{   }{ \mb{P}^{xz} }
+\DeclareDocumentCommand \msStCov	{   }{ \mb{P}^{zx} }
+\DeclareDocumentCommand \msCov		{   }{ \mb{P}^z }
+% filtered state mean and covariance
+\DeclareDocumentCommand \filtMean 	{ O{\tind} }{ \stMean_{#1|#1} }
+\DeclareDocumentCommand \filtCov 	{ O{\tind} }{ \stCov_{#1|#1} }
+% Kalman gain
+\DeclareDocumentCommand \kGain		{  }{ \mb{K} }
+% input and output dimension
+\DeclareDocumentCommand \inDim 		{  }{ D }
+\DeclareDocumentCommand \outDim 	{  }{ E }
+% state and measurement dimension
+\DeclareDocumentCommand \stDim 		{  }{ {d_x} }
+\DeclareDocumentCommand \msDim 		{  }{ {d_z} }
+\DeclareDocumentCommand \stNoiseDim {  }{ {d_q} }
+\DeclareDocumentCommand \msNoiseDim	{  }{ {d_r} }
+% general decoupled input variable, input variable, output variable
+\DeclareDocumentCommand \inVar 		{ s }{ \IfBooleanTF{#1}{{x}}{{\vb{x}}} }
+\DeclareDocumentCommand \inVarU		{ s }{ \IfBooleanTF{#1}{{\xi}}{{\vb{\xi}}} }
+\DeclareDocumentCommand \inVarC		{ s }{ \IfBooleanTF{#1}{{\eta}}{{\vb{\eta}}} }
+\DeclareDocumentCommand \outVar 	{ s }{ \IfBooleanTF{#1}{y}{\vb{y}} }
+% input mean, covariance, cov. square-root
+\DeclareDocumentCommand \inMean 	{  }{ \vb{m} }
+\DeclareDocumentCommand \inCov 		{  }{ \mb{P} }
+\DeclareDocumentCommand \inCovFct	{  }{ \mb{L} }
+\DeclareDocumentCommand \inScale	{  }{ \mb{\Sigma} }
+\DeclareDocumentCommand \inScaleFct	{  }{ \mb{\Lambda} }
+% output mean, covariance and cross-covariance
+\DeclareDocumentCommand \outMean 	{  }{ \vb{\mu} }
+\DeclareDocumentCommand \outCov 	{  }{ \mb{\Pi} }
+\DeclareDocumentCommand \inoutCov 	{  }{ \mb{C} }
+% approximate output mean, covariance and cross-covariance
+\DeclareDocumentCommand \outMeanApp	{  }{ \vb{\mu}_{\mathrm{A}} }
+\DeclareDocumentCommand \outCovApp 	{  }{ \mb{\Pi}_{\mathrm{A}} }
+\DeclareDocumentCommand \inoutCovApp{  }{ \mb{C}_{\mathrm{A}} }
+% set of reals, naturals, dataset
+\DeclareDocumentCommand \R 			{  }{ \mathbb{R} }
+\DeclareDocumentCommand \Nat		{  }{ \mathbb{N} }
+\DeclareDocumentCommand \D 			{  }{ \mathcal{D} }
+\DeclareDocumentCommand \Cinf		{  }{ \mathcal{C}^{\infty} }
+% degrees of freedom parameter: arbitrary, TPQ related and a Student update related
+\DeclareDocumentCommand \inDof 		{  }{ \nu }
+\DeclareDocumentCommand \nlfDof 	{  }{ \nu_{\nlFcn*} }
+\DeclareDocumentCommand \stDof 		{  }{ \nu^x }
+\DeclareDocumentCommand \msNoiseDof	{  }{ \nu^r }
+\DeclareDocumentCommand \stNoiseDof	{  }{ \nu^q }
+\DeclareDocumentCommand \filtDof 	{ O{\tind} }{ \stDof_{#1|#1} }
+\DeclareDocumentCommand \fixDof 	{ O{\tind} }{ \nu^* }
+
+
+% GAUSSIAN PROCESSES and BAYESIAN QUADRATURE ===================================
+% integral and quadrature operators
+\DeclareDocumentCommand \Int		{ m }{ \mathbb{I}\bqty{#1} }
+\DeclareDocumentCommand \Qad		{ m }{ \mathbb{Q}\bqty{#1} }
+% # test points, # training points, # sigma-points, # basis vectors
+\DeclareDocumentCommand \tsNum		{  }{ M }
+\DeclareDocumentCommand \trNum		{  }{ N }
+\DeclareDocumentCommand \spNum		{  }{ N }
+\DeclareDocumentCommand \bvNum		{  }{ S }
+% GP/TP distribution
+\DeclareDocumentCommand \GP 		{ m O{\meanFcn(\cdot)} O{\kerFcn(\cdot, \cdot)} }
+{
+	#1\sim\mathrm{GP}\pqty{#2,\, #3}
+}
+\DeclareDocumentCommand \TP 		{ m O{\meanFcn(\cdot)} O{\kerFcn(\cdot, \cdot)} O{\nu} }
+{
+	#1\sim\mathrm{TP}\pqty{#2,\, #3,\, #4}
+}
+% train input, output
+\DeclareDocumentCommand \gpTrIn		{  }{ \vb{x} }
+\DeclareDocumentCommand \gpTrOut	{  }{ y }
+\DeclareDocumentCommand \gpTrOutD	{  }{ \vb{\delta} }
+% test input, output
+\DeclareDocumentCommand \gpTsIn		{  }{ \vb{x}^{\star} }
+\DeclareDocumentCommand \gpTsOut	{  }{ y^{\star} }
+% set of training/test inputs
+\DeclareDocumentCommand \gpTrInSet	{  }{ \mb{X} }
+\DeclareDocumentCommand \gpTsInSet	{  }{ \mb{X}^{\star} }
+% set of training outputs (star = set of vector outputs) D - derivative outputs
+\DeclareDocumentCommand \gpTrOutSet	{ s }{ \IfBooleanTF{#1}{\mb{y}}{\vb{y}} }  % TODO: macro name should be independent of model (no GP/TP)
+%\DeclareDocumentCommand \gpTrOutYD	{ s }{ \IfBooleanTF{#1}{\widetilde{\mb{y}}}{\widetilde{\vb{y}}} }
+% general function GP context, evaluations at train/test points
+\DeclareDocumentCommand \gpFcn		{  }{ f }
+\DeclareDocumentCommand \gpTrFcn	{  }{ \vb{f} }
+\DeclareDocumentCommand \gpTsFcn	{  }{ \vb{f}^{\star} }
+\DeclareDocumentCommand \gpFcnD		{ s }{ \IfBooleanTF{#1}{d}{\vb{d}} }
+% variance of GP observations
+\DeclareDocumentCommand \gpOutVar	{  }{ \sigma^2 }
+\DeclareDocumentCommand \gpOutVarD	{  }{ \sigma^2_{\gpFcnD*} }
+% mean function, kernel function
+\DeclareDocumentCommand \meanFcn	{  }{ m }
+\DeclareDocumentCommand \kerFcn		{  }{ k }
+\DeclareDocumentCommand \kerFcnFF	{  }{ k_{\nlFcn*\nlFcn*} }
+\DeclareDocumentCommand \kerFcnFD	{  }{ k_{\nlFcn*\gpFcnD*} }
+\DeclareDocumentCommand \kerFcnDF	{  }{ k_{\gpFcnD*\nlFcn*} }
+\DeclareDocumentCommand \kerFcnDD	{  }{ k_{\gpFcnD*\gpFcnD*} }
+% kernel vector (one argument fixed one free)
+\DeclareDocumentCommand \kerVec		{ O{\inVar} }{ \vb{\kerFcn}(#1) }
+\DeclareDocumentCommand \kerVecFF	{ O{\inVar} }{ \vb{\kerFcn}_{\nlFcn*\nlFcn*}(#1) }
+\DeclareDocumentCommand \kerVecFD	{ O{\inVar} }{ \vb{\kerFcn}_{\nlFcn*\gpFcnD*}(#1) }
+%\DeclareDocumentCommand \kerVecYD	{ O{\inVar} }{ \widetilde{\vb{\kerFcn}}(#1) }
+% kernel matrix (pair-wise evaluations of kernel)
+\DeclareDocumentCommand \kerMat		{  }{ \mb{K} }
+\DeclareDocumentCommand \kerMatFF	{  }{ \mb{K}_{\nlFcn*\nlFcn*} }
+\DeclareDocumentCommand \kerMatFD	{  }{ \mb{K}_{\nlFcn*\gpFcnD*} }
+\DeclareDocumentCommand \kerMatDF	{  }{ \mb{K}_{\gpFcnD*\nlFcn*} }
+\DeclareDocumentCommand \kerMatDD	{  }{ \mb{K}_{\gpFcnD*\gpFcnD*} }
+%\DeclareDocumentCommand \kerMatYD	{  }{ \widetilde{\mb{K}} }
+% kernel parameter
+\DeclareDocumentCommand \kerPar		{ s }{ \IfBooleanTF{#1}{\theta}{\vb{\theta}} }
+% RBF kernel input and output lengthscales
+\DeclareDocumentCommand \rbfLen		{  }{ \lambda }
+\DeclareDocumentCommand \rbfLenM	{  }{ \mb{\Lambda} }
+\DeclareDocumentCommand \rbfScale   {  }{ \alpha }
+% weights for GPQ mean, covariance and cross-covariance
+\DeclareDocumentCommand \mtWm 		{  }{ \vb{w} }
+\DeclareDocumentCommand \mtWc 		{  }{ \mb{W} }
+\DeclareDocumentCommand \mtWcc 		{  }{ \mb{W}_c }
+% expected GP/TP predictive variance
+\DeclareDocumentCommand \gpExpVar	{  }{ \sigma^2 }
+\DeclareDocumentCommand \tpExpVar	{  }{ \mb{S} }
+% kernel mean (map), kernel covariance and kernel cross-covariance
+\DeclareDocumentCommand \kerMean	{  }{ \vb{q} }
+\DeclareDocumentCommand \kerCov		{  }{ \mb{Q} }
+\DeclareDocumentCommand \kerCCov	{  }{ \mb{R} }
+% kernel mean (map), kernel covariance and kernel cross-covariance - derivatives
+\DeclareDocumentCommand \kerMeanFF	{  }{ \vb{q}_{\nlFcn*\nlFcn*} }
+\DeclareDocumentCommand \kerMeanFD	{  }{ \vb{q}_{\nlFcn*\gpFcnD*} }
+\DeclareDocumentCommand \kerCovFF	{  }{ \mb{Q}_{\nlFcn*\nlFcn*} }
+\DeclareDocumentCommand \kerCovFD	{  }{ \mb{Q}_{\nlFcn*\gpFcnD*} }
+\DeclareDocumentCommand \kerCovDF	{  }{ \mb{Q}_{\gpFcnD*\nlFcn*} }
+\DeclareDocumentCommand \kerCovDD	{  }{ \mb{Q}_{\gpFcnD*\gpFcnD*} }
+\DeclareDocumentCommand \kerCCovF	{  }{ \mb{R}_{\nlFcn*} }
+\DeclareDocumentCommand \kerCCovD	{  }{ \mb{R}_{\gpFcnD*} }
+% sigma-point index
+\DeclareDocumentCommand \spind 			{  }{ n }
+\DeclareDocumentCommand \spSet 			{  }{ \mb{X} }
+\DeclareDocumentCommand \spSetU			{  }{ \mb{\Xi} }
+% degree of Hermite polynomial
+\DeclareDocumentCommand \degH 			{  }{ p }
+
+
+% FUNCTIONAL DUAL ADAPTIVE CONTROL ===================================================
+% system input, output, state vector, output noise
+\DeclareDocumentCommand \sysOut			{  }{ y }
+\DeclareDocumentCommand \sysOUT			{  }{ \vb{y} }
+\DeclareDocumentCommand \sysIn			{  }{ u }
+\DeclareDocumentCommand \sysIN			{  }{ \vb{u} }
+\DeclareDocumentCommand \sysNs			{  }{ e }
+\DeclareDocumentCommand \sysFcnF		{  }{ f }
+\DeclareDocumentCommand \sysFcnG		{  }{ g }
+\DeclareDocumentCommand \sysSt			{  }{ \vb{x} }	% TODO use x for state, something else, like \phi, for vector of regressors
+\DeclareDocumentCommand \sysST			{  }{ \mb{x} }
+\DeclareDocumentCommand \sysNsVar		{  }{ \sigma^2_e }
+% input/output maximum lag (order)
+\DeclareDocumentCommand \inLag			{  }{ n_u }
+\DeclareDocumentCommand \outLag			{  }{ n_y }
+% model: output, function, vector of regressors, matrix of regressors
+\DeclareDocumentCommand \modOut			{  }{ \hat{y} }
+\DeclareDocumentCommand \modOutMean		{  }{ \hat{\mu} }
+\DeclareDocumentCommand \modOutVar		{  }{ \hat{\sigma}^2 }
+\DeclareDocumentCommand \modFcn			{  }{ h }
+\DeclareDocumentCommand \modReg			{  }{ \vb{\phi} }
+\DeclareDocumentCommand \modREG			{  }{ \mb{\Phi} }
+
+
+% RECURSIVE GAUSSIAN PROCESS ===================================================
+% # observations at each time step (observations per iteration)
+\DeclareDocumentCommand	\opiNum		{  }{ {L} }
+% train input, output
+\DeclareDocumentCommand \rgpTrIn	{  }{ \vb{x} }
+\DeclareDocumentCommand \rgpTrOut	{  }{ y }
+% test input, output
+\DeclareDocumentCommand \rgpTsIn	{  }{ \vb{x}^{\star} }
+\DeclareDocumentCommand \rgpTsOut	{  }{ y^{\star} }
+% set of training/test inputs
+\DeclareDocumentCommand \rgpTrInSet	{  }{ \mb{X} }
+\DeclareDocumentCommand \rgpTsInSet	{  }{ \mb{X}^{\star} }
+% set of training outputs
+\DeclareDocumentCommand \rgpTrOutSet{  }{ \vb{y} }
+% general function GP context, evaluations at train/test points
+\DeclareDocumentCommand \rgpFcn		{  }{ f }
+\DeclareDocumentCommand \rgpTrFcn	{  }{ \vb{f} }
+\DeclareDocumentCommand \rgpTsFcn	{  }{ \vb{f}^{\star} }
+% basis vector
+\DeclareDocumentCommand	\rgpBV 		{  }{ \tilde{\modReg} }
+% basis vector matrix
+\DeclareDocumentCommand	\rgpBVSet	{  }{ \tilde{\modREG} }
+\DeclareDocumentCommand	\sysSTBV	{  }{ \tilde{\sysST} }
+\DeclareDocumentCommand	\sysINBV	{  }{ \tilde{\sysIN} }
+% function value, mean, variance at basis vectors
+\DeclareDocumentCommand	\rgpFcnBV	{  }{ \tilde{\vb{\gpFcn}} }
+\DeclareDocumentCommand	\rgpMeanBV	{  }{ \tilde{\vb{\mu}} }
+\DeclareDocumentCommand	\rgpVarBV	{  }{ \tilde{\mb{\Sigma}} }
+% function predictive mean/variance at test point
+\DeclareDocumentCommand	\rgpMeanPred{  }{ \modOutMean }
+\DeclareDocumentCommand	\rgpVarPred	{  }{ \modOutVar }
+% update/prediction step gain
+\DeclareDocumentCommand	\rgpGainUpdt{  }{ \mb{G} }
+\DeclareDocumentCommand	\rgpGainPred{  }{ \mb{J} }
+% kernel matrices
+\DeclareDocumentCommand	\kerMatBV	{  }{ \tilde{\mb{K}} }  		% \kerFcn(\rgpBVSet, \rgpBVSet)
+\DeclareDocumentCommand	\kerMatXBV	{  }{ \tilde{\vb{k}}_{X} }  	% \kerFcn(\rgpTrInSet_k, \rgpBVSet)
+\DeclareDocumentCommand	\kerMatXX	{  }{ \mb{K}_{XX} }  			% \kerFcn(\rgpTrInSet_k, \rgpTrInSet_k)
+
+
+% COMMON WORDS =================================================================
+\DeclareDocumentCommand	\bicrit		{  }{bicriterial}
+\DeclareDocumentCommand	\hypar 		{ O{} }{hyperparameter#1}
+\DeclareDocumentCommand	\spoint 	{ O{} }{sigma-point#1}
+\DeclareDocumentCommand	\wrt 		{  }{ w.r.t. }
+\DeclareDocumentCommand \student 	{ s m }{\IfBooleanTF{#1}{\( t \)-#2}{Student's \( t \)-#2}}
+
+% insert figure
+\DeclareDocumentCommand	\InsertFig	{ m m m }{
+	\begin{figure}[!htb]
+		\begin{center}
+			\leavevmode
+			#1
+			\caption{#2}
+			\label{#3}
+		\end{center}
+	\end{figure}
+}

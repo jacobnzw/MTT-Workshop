@@ -1,0 +1,107 @@
+\documentclass[
+	a4paper,
+	footheight=38pt
+]{scrreprt}
+
+\usepackage[english]{babel}
+\usepackage[T1]{fontenc}  			% make sure to install cm-super package for improved PDF quality
+\usepackage[utf8]{inputenc}
+%\usepackage[cm]{fullpage}			% Fullpage for now
+\usepackage{graphicx}
+\usepackage[dvipsnames]{xcolor}
+\usepackage[font=small]{caption}
+\usepackage{subcaption}
+\usepackage{microtype}			 	% microtypographical fine-tunning
+\usepackage{setspace} 				% Provides support for setting the spacing between lines in a document.
+%\usepackage{tocbibind}				% Add bibliography/index/contents to Table of Contents.
+\usepackage{mathtools}				% enhances amsmath (no need to load amsmath)
+\usepackage{amssymb}
+\usepackage{amsfonts}
+\usepackage{amsthm}
+\usepackage{bm} 					% bold math symbols including greek letters
+\usepackage{booktabs}				% professional tables (w/o vertical bars)
+\usepackage{array}					% 
+\usepackage{dcolumn} 				% align to decimal point in tables
+\usepackage[shortcuts]{extdash} 	% hyphenation of dashed words
+%\usepackage[algoruled]{algorithm2e}
+%\newcommand\mycommfont[1]{\small\ttfamily #1}
+%\SetCommentSty{mycommfont}
+\usepackage{cleveref}				% clever environment referencing
+\crefname{figure}{Fig.}{Figs.}
+\crefname{algorithm}{Alg.}{Algs.}
+\usepackage{siunitx}				% typesetting of SI units
+%\usepackage{paralist}		     	% compact lists with more options
+%\usepackage[]{todonotes}			% TODO notes
+%\presetkeys{todonotes}{backgroundcolor=orange!50}{}
+% Not sure which to use for bibliography
+%\usepackage{cite}
+%\usepackage{citesort}
+\usepackage[square, sort, numbers, authoryear]{natbib}
+\usepackage{sty/macros}
+
+% Title Page
+\title{Notes on Multi-target Tracking}
+\author{Jakub Prüher}
+
+
+
+
+
+
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+	This report summarizes my understanding of the multi-target tracking (MTT) problems and the most representative algorithms. 
+	First, I cover prerequisites necessary for understanding multi-target tracking such as basics of single-target tracking (Bayesian filtering), measurement formation and data association.
+	The aim is to describe the most representative MTTs, such as joint probabilistic data association filter (JPDAF), multiple hypothesis tracking (MHT) and finally, my favourite, random finite set (RFS) approaches.
+\end{abstract}
+
+
+
+
+\chapter{Prerequisites}\label{ch:prerequisites}
+
+
+\section{Single-Target Tracking}\label{sec:single-target_tracking}
+
+
+\section{Single-Target Tracking in Clutter}\label{sec:single-target_tracking_in_clutter}
+
+
+\section{Data Association}\label{sec:data_association}
+
+
+
+
+\chapter{Joint Probabilistic Data Association Filter}
+
+
+
+
+\chapter{Multiple Hypothesis Tracking}
+
+
+
+
+\chapter{Random Finite Set}
+
+FIIST density is a function ... such that 
+\begin{equation}\label{eq:fiist_density}
+	\mathrm{Pr}(S \subseteq \mathcal{X}) = \int_S \pi(X) \dsx[X]
+\end{equation}
+where the \emph{set integral} is defined as
+\begin{equation}\label{eq:set_integral}
+	\int_S \pi(X) \dsx[X] \triangleq \sum_{k=0}^{\infty}\frac{1}{k!}\int_{S^k} \pi(\Bqty{\inVar_1, \inVar_2, \ldots, \inVar_k}) \dx[(\inVar_1, \inVar_2, \ldots, \inVar_k)]
+\end{equation}
+with the convention \( \int_{S^0} \pi(\emptyset) \dsx[\emptyset] = \pi(\emptyset) \).
+
+FIIST density is not a probability density.
+
+\section{Probability Hypothesis Density Filter}
+
+
+
+
+\end{document}          
