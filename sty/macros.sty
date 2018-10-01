@@ -109,11 +109,11 @@
 \DeclareDocumentCommand \stVar 		{ s }{ \IfBooleanTF{#1}{x}{\vb{x}} }
 \DeclareDocumentCommand \msVar		{ s }{ \IfBooleanTF{#1}{z}{\vb{z}} }
 % state and measurement noise
-\DeclareDocumentCommand \stNoise	{ s }{ \IfBooleanTF{#1}{q}{\vb{q}} }  % TODO rename to \snVar, \stnVar
-\DeclareDocumentCommand \msNoise	{ s }{ \IfBooleanTF{#1}{r}{\vb{r}} }
+\DeclareDocumentCommand \stnVar		{ s }{ \IfBooleanTF{#1}{q}{\vb{q}} }  % TODO rename to \snVar, \stnVar
+\DeclareDocumentCommand \msnVar		{ s }{ \IfBooleanTF{#1}{r}{\vb{r}} }
 % state and measurement noise covariances
-\DeclareDocumentCommand \stNoiseCov	{ s }{ \IfBooleanTF{#1}{\sigma^2_q}{\mb{Q}} }
-\DeclareDocumentCommand \msNoiseCov	{ s }{ \IfBooleanTF{#1}{\sigma^2_r}{\mb{R}} }
+\DeclareDocumentCommand \stnCov		{ s }{ \IfBooleanTF{#1}{\sigma^2_q}{\mb{Q}} }
+\DeclareDocumentCommand \msnCov		{ s }{ \IfBooleanTF{#1}{\sigma^2_r}{\mb{R}} }
 % state and measurement mean, covariance and cross-covariance
 \DeclareDocumentCommand \stMean		{   }{ \vb{m}^x }
 \DeclareDocumentCommand \msMean		{   }{ \vb{m}^z }
@@ -121,6 +121,9 @@
 \DeclareDocumentCommand \stMsCov	{   }{ \mb{P}^{xz} }
 \DeclareDocumentCommand \msStCov	{   }{ \mb{P}^{zx} }
 \DeclareDocumentCommand \msCov		{   }{ \mb{P}^z }
+% multi-state, multi-measurement
+\DeclareDocumentCommand \mstVar 	{   }{X}
+\DeclareDocumentCommand \mmsVar 	{   }{Z}
 % filtered state mean and covariance
 \DeclareDocumentCommand \filtMean 	{ O{\tind} }{ \stMean_{#1|#1} }
 \DeclareDocumentCommand \filtCov 	{ O{\tind} }{ \stCov_{#1|#1} }
@@ -132,8 +135,8 @@
 % state and measurement dimension
 \DeclareDocumentCommand \stDim 		{  }{ {d_x} }
 \DeclareDocumentCommand \msDim 		{  }{ {d_z} }
-\DeclareDocumentCommand \stNoiseDim {  }{ {d_q} }
-\DeclareDocumentCommand \msNoiseDim	{  }{ {d_r} }
+\DeclareDocumentCommand \stnDim 	{  }{ {d_q} }
+\DeclareDocumentCommand \msnDim		{  }{ {d_r} }
 % general decoupled input variable, input variable, output variable
 \DeclareDocumentCommand \inVar 		{ s }{ \IfBooleanTF{#1}{{x}}{{\vb{x}}} }
 \DeclareDocumentCommand \inVarU		{ s }{ \IfBooleanTF{#1}{{\xi}}{{\vb{\xi}}} }
@@ -143,8 +146,6 @@
 \DeclareDocumentCommand \inMean 	{  }{ \vb{m} }
 \DeclareDocumentCommand \inCov 		{  }{ \mb{P} }
 \DeclareDocumentCommand \inCovFct	{  }{ \mb{L} }
-\DeclareDocumentCommand \inScale	{  }{ \mb{\Sigma} }
-\DeclareDocumentCommand \inScaleFct	{  }{ \mb{\Lambda} }
 % output mean, covariance and cross-covariance
 \DeclareDocumentCommand \outMean 	{  }{ \vb{\mu} }
 \DeclareDocumentCommand \outCov 	{  }{ \mb{\Pi} }
@@ -153,11 +154,13 @@
 \DeclareDocumentCommand \outMeanApp	{  }{ \vb{\mu}_{\mathrm{A}} }
 \DeclareDocumentCommand \outCovApp 	{  }{ \mb{\Pi}_{\mathrm{A}} }
 \DeclareDocumentCommand \inoutCovApp{  }{ \mb{C}_{\mathrm{A}} }
-% set of reals, naturals, dataset
+% set of reals, naturals, dataset, state space, measurement space
 \DeclareDocumentCommand \R 			{  }{ \mathbb{R} }
 \DeclareDocumentCommand \Nat		{  }{ \mathbb{N} }
 \DeclareDocumentCommand \D 			{  }{ \mathcal{D} }
 \DeclareDocumentCommand \Cinf		{  }{ \mathcal{C}^{\infty} }
+\DeclareDocumentCommand \stSp		{  }{ \mathcal{X} }
+\DeclareDocumentCommand \msSp		{  }{ \mathcal{Z} }
 % degrees of freedom parameter: arbitrary, TPQ related and a Student update related
 \DeclareDocumentCommand \inDof 		{  }{ \nu }
 \DeclareDocumentCommand \nlfDof 	{  }{ \nu_{\nlFcn*} }

@@ -1,11 +1,9 @@
-\documentclass[
-	a4paper,
-	footheight=38pt
-]{scrreprt}
-
+\documentclass[a4paper]{scrreprt}
+\usepackage[top=2cm,bottom=4cm]{geometry}
 \usepackage[english]{babel}
 \usepackage[T1]{fontenc}  			% make sure to install cm-super package for improved PDF quality
 \usepackage[utf8]{inputenc}
+\usepackage{lmodern}
 %\usepackage[cm]{fullpage}			% Fullpage for now
 \usepackage{graphicx}
 \usepackage[dvipsnames]{xcolor}
@@ -39,14 +37,21 @@
 \usepackage[square, sort, numbers, authoryear]{natbib}
 \usepackage{sty/macros}
 
+
+% ======================== THEOREMS ========================
+\theoremstyle{theorem}
+\newtheorem{thm}{Theorem}
+\newtheorem{lem}{Lemma}
+\newtheorem{cor}{Corollary}
+\theoremstyle{definition}
+\newtheorem{defn}{Definition}
+\newtheorem{alg}{Algorithm}
+% ========================================================
+
+
 % Title Page
 \title{Notes on Multi-target Tracking}
 \author{Jakub Prüher}
-
-
-
-
-
 
 
 \begin{document}
@@ -75,17 +80,17 @@
 
 
 
-\chapter{Joint Probabilistic Data Association Filter}
+\chapter{Joint Probabilistic Data Association Filter}\label{ch:jpda_filter}
 
 
 
 
-\chapter{Multiple Hypothesis Tracking}
+\chapter{Multiple Hypothesis Tracking}\label{ch:multiple_hypothesis_tracking}
 
 
 
 
-\chapter{Random Finite Set}
+\chapter{Random Finite Sets}\label{ch:random_finite_sets}
 
 FIIST density is a function ... such that 
 \begin{equation}\label{eq:fiist_density}
@@ -98,6 +103,34 @@ where the \emph{set integral} is defined as
 with the convention \( \int_{S^0} \pi(\emptyset) \dsx[\emptyset] = \pi(\emptyset) \).
 
 FIIST density is not a probability density.
+
+\begin{defn}[\emph{Bernoulli RFS}]
+\begin{equation}\label{eq:bernoulli_rfs}
+	\pi(X) = 
+	\begin{cases}
+	1 - r, 			& X = \emptyset \\
+	r p(\stVar), 	& X = \Bqty{\stVar}
+	\end{cases}
+\end{equation}
+\end{defn}
+
+\begin{defn}[\emph{Multi-Bernoulli RFS}]
+	Union of independent Bernoulli random finite sets.
+\end{defn}
+
+\begin{defn}[\emph{I.I.D. Cluster RFS}]
+	RFS containing elements that are i.i.d. according to a probability density \( p(\stVar): \stSp\to\R \)
+\end{defn}
+
+\begin{defn}[\emph{Probability Hypothesis Density (Intensity Function)}]
+	content...
+\end{defn}
+
+\begin{defn}[]
+	content...
+\end{defn}
+
+
 
 \section{Probability Hypothesis Density Filter}
 
