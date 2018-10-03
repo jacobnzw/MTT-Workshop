@@ -72,10 +72,38 @@
 \section{Single-Target Tracking}\label{sec:single-target_tracking}
 
 
-\section{Single-Target Tracking in Clutter}\label{sec:single-target_tracking_in_clutter}
 
 
 \section{Data Association}\label{sec:data_association}
+
+
+\subsection{Non-Bayesian Association Techniques}
+
+\subsubsection{Nearest Neighbor}
+selects the nearest measurement to the predicted measurement according to the normalized innovation squared (NIS) metric
+Nearest Neighbor Standard Filter \citep{Bar-Shalom1995}, used in radar trackers
+
+\subsubsection{Strongest Neighbor}
+assuming that signal intensity information is available, selects the measurement with highest signal intensity
+Strongest Neighbor Standard Filter \citep{Bar-Shalom1995}, used in sonar trackers
+
+\subsubsection{Track-Split}
+
+
+\subsection{Bayesian Association Techniques}
+
+\subsubsection{Probabilistic Data Association}
+
+
+
+
+\section{Single-Target Tracking in Clutter}\label{sec:single-target_tracking_in_clutter}
+
+
+
+
+
+
 
 
 
@@ -136,5 +164,6 @@ FIIST density is not a probability density.
 
 
 
-
+\bibliographystyle{plainnat}
+\bibliography{refdb}
 \end{document}          
