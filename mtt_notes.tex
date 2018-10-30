@@ -95,6 +95,8 @@ Strongest Neighbor Standard Filter \citep{Bar-Shalom1995}, used in sonar tracker
 
 
 \chapter{Random Finite Sets}\label{ch:random_finite_sets}
+% NOTE: the convention that upper-case letters denote number of elements and lower-case counterpart indexes the elements needs to be abandoned, because upper-case is now reserved for RVs and lower-case for RV realizations.
+% Thus, N = discrete random variable, n = realization of N (= number of elements in RFS X)
 
 \begin{defn}[\emph{Set Integral}]
 	 of a set function \( \pi \) is defined as
@@ -115,16 +117,16 @@ FISST density \emph{is not} a probability density.
 \begin{defn}[\emph{Cardinality Density}]
 	of a RFS \( X \) is given by
 	\begin{equation}\label{key}
-		\rho(n) = \Pr(|X|=n) = \frac{1}{n!}\int \pi(\Bqty{\stVar_1,\, \ldots,\, \stVar_N}) \dx[\stVar_1]\cdot\ldots\cdot\dx[\stVar_N]
+		\rho(n) = \Pr(|X|=n) = \frac{1}{n!}\int \pi(\Bqty{\stVar_1,\, \ldots,\, \stVar_n}) \dx[\stVar_1]\cdot\ldots\cdot\dx[\stVar_n]
 	\end{equation}
 \end{defn}
 
 \begin{defn}[\emph{I.I.D. Cluster RFS}]
-	RFS with FISST density
+	RFS \( X \) of cardinality \( n \) with FISST density
 	\begin{equation}\label{key}
-		\pi(X) = n! \rho(n) \prod_{n=1}^{N} p(\stVar_n)
+		\pi(X) = n! \rho(n) \prod_{i=1}^{n} p(\stVar_i).
 	\end{equation}
-	containing elements that are i.i.d. according to a probability density \( p(\stVar): \stSp\to\R \).
+	The RFS contains elements \( \stVar_1, \ldots, \stVar_n \) that are i.i.d. according to a probability density \( p(\stVar): \stSp\to\R \).
 \end{defn}
 
 \begin{defn}[\emph{Poisson RFS}]
