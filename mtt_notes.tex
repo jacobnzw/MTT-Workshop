@@ -114,11 +114,12 @@ Strongest Neighbor Standard Filter \citep{Bar-Shalom1995}, used in sonar tracker
 \end{defn}
 FISST density \emph{is not} a probability density.
 
-\begin{defn}[\emph{Cardinality Density}]
-	of a RFS \( X \) is given by
+\begin{defn}[\emph{Cardinality Distribution}]
+	Cardinality distribution of a RFS \( X \) is given by
 	\begin{equation}\label{key}
 		\rho(n) = \Pr(|X|=n) = \frac{1}{n!}\int \pi(\Bqty{\stVar_1,\, \ldots,\, \stVar_n}) \dx[\stVar_1]\cdot\ldots\cdot\dx[\stVar_n]
 	\end{equation}
+	It's nothing but a probability mass function (PMF) of a discrete random variable \( N \sim \rho(n) \).
 \end{defn}
 
 \begin{defn}[\emph{I.I.D. Cluster RFS}]
@@ -152,7 +153,14 @@ FISST density \emph{is not} a probability density.
 \end{defn}
 
 \begin{defn}[\emph{Probability Hypothesis Density}]
-	content...
+	For a RFS \( X \) and , the intensity function is defined as
+	\begin{equation}\label{key}
+		v(\stVar) = \int \pi(\Bqty{\stVar} \cup X) \dsx[X]
+	\end{equation}
+	Integrating intensity over a (deterministic) subset of state space \( S \subseteq \mathcal{X} \) yields the expected number of elements (expected cardinality) in \( S \)
+	\begin{equation}\label{key}
+		\E{|X \cap S|} = \int_S v(\stVar) \dx[\stVar]
+	\end{equation}
 \end{defn}
 Probability hypothesis density (PHD) is also known as intensity function.
 
