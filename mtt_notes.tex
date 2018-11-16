@@ -299,13 +299,24 @@ FISST density \emph{is not} a probability density.
 \end{defn}
 Probability hypothesis density (PHD) is also known as intensity function.
 
-\begin{defn}[]
-	content...
-\end{defn}
+\begin{figure}[h]
+	\centering
+	\includegraphics[scale=0.22]{./img/intensity_function}
+	\caption{Intensity function, a.k.a. probability hypothesis density (PHD).}
+\end{figure}
+
 
 
 
 \section{Multi-target State-Space Models}
+
+\begin{figure}[h]
+	\centering
+	\includegraphics[scale=0.25]{./img/multi-target_state_space_model}
+	\caption{Multi-target state space model.}
+\end{figure}
+
+\subsection{Motion model}
 Given a multi-target state \( \stRFS_{\tind-1} \) at time \( \tind-1 \), the multi-target state \( \stRFS_\tind \) at time \( \tind \) is given by the union of the surviving targets, the spawned targets and the spontaneous births
 \begin{equation}\label{eq:multitarget_dynamics}
 	\stRFS_\tind = \bqty{ \bigcup_{\vb{\zeta} \in \stRFS_{\tind-1}} S_{\tind|\tind-1}(\vb{\zeta}) } \cup \bqty{ \bigcup_{\vb{\zeta} \in \stRFS_{\tind-1}} B_{\tind|\tind-1}(\vb{\zeta}) } \cup \Gamma_\tind
@@ -322,8 +333,34 @@ where
 	\bottomrule
 \end{tabular}
 \end{table}
-
 The actual forms of \( B_{\tind|\tind-1}(\cdot) \) and \( \Gamma_\tind \) are problem dependent.
+\begin{figure}[h]
+	\centering
+	\includegraphics[scale=0.2]{./img/multi-target_motion_model}
+	\caption{Multi-target motion model.}
+\end{figure}
+
+\subsection{Observation model}
+\begin{equation}\label{eq:multitarget_observation}
+	\msRFS_\tind = \bqty{ \bigcup_{\vb{\zeta} \in \stRFS_{\tind-1}} \Theta_{\tind}(\inVar) } \cup K_\tind
+\end{equation}
+where
+\begin{table}[h]
+	\centering
+	\begin{tabular}{@{} l l @{}}
+		\toprule
+		\( \Theta_{\tind}(\inVar) \)	& can take on \( \Bqty{\msVar_\tind} \) when the target is detected, or \( \emptyset \) when the target is not detected, \\
+		\( K_\tind \)					& clutter (false measurements/alarms) \\
+		\bottomrule
+	\end{tabular}
+\end{table}
+The actual form of \( K_\tind \) is problem dependent.
+\begin{figure}[h]
+	\centering
+	\includegraphics[scale=0.22]{./img/multi-target_observation_model}
+	\caption{Multi-target observation model.}
+\end{figure}
+
 
 
 
