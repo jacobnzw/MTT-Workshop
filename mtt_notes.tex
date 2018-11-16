@@ -1,4 +1,4 @@
-\documentclass[a4paper]{scrreprt}
+\documentclass[a4paper,10pt]{scrreprt}
 \usepackage[top=2cm,bottom=4cm]{geometry}
 \usepackage[english]{babel}
 \usepackage[T1]{fontenc}  			% make sure to install cm-super package for improved PDF quality
@@ -229,21 +229,49 @@
 %\chapter{Multiple Hypothesis Tracking}\label{ch:multiple_hypothesis_tracking}
 
 
-
-
 \chapter{Random Finite Sets}\label{ch:random_finite_sets}
+% NOTE: the convention that upper-case letters denote number of elements and lower-case counterpart indexes the elements needs to be abandoned, because upper-case is now reserved for RVs and lower-case for RV realizations.
+% Thus, N = discrete random variable, n = realization of N (= number of elements in RFS X)
 
-FIIST density is a function ... such that 
-\begin{equation}\label{eq:fiist_density}
-	\mathrm{Pr}(S \subseteq \mathcal{X}) = \int_S \pi(X) \dsx[X]
-\end{equation}
-where the \emph{set integral} is defined as
-\begin{equation}\label{eq:set_integral}
-	\int_S \pi(X) \dsx[X] \triangleq \sum_{k=0}^{\infty}\frac{1}{k!}\int_{S^k} \pi(\Bqty{\inVar_1, \inVar_2, \ldots, \inVar_k}) \dx[(\inVar_1, \inVar_2, \ldots, \inVar_k)]
-\end{equation}
-with the convention \( \int_{S^0} \pi(\emptyset) \dsx[\emptyset] = \pi(\emptyset) \).
+\begin{defn}[\emph{Set Integral}]
+	 of a set function \( \pi \) is defined as
+	\begin{equation}\label{eq:set_integral}
+		\int_S \pi(X) \dsx[X] \triangleq \sum_{k=0}^{\infty}\frac{1}{k!}\int_{S^k} \pi(\Bqty{\inVar_1, \inVar_2, \ldots, \inVar_k}) \dx[(\inVar_1, \inVar_2, \ldots, \inVar_k)]
+	\end{equation}
+	with the convention \( \int_{S^0} \pi(\emptyset) \dsx[\emptyset] = \pi(\emptyset) \).
+\end{defn}
 
-FIIST density is not a probability density.
+\begin{defn}[\emph{FISST Density}]
+	 is a set function \( \pi(X) \) such that 
+	\begin{equation}\label{eq:fiist_density}
+		\Pr(S \subseteq \mathcal{X}) = \int_S \pi(X) \dsx[X]
+	\end{equation}
+\end{defn}
+FISST density \emph{is not} a probability density.
+
+\begin{defn}[\emph{Cardinality Distribution}]
+	Cardinality distribution of a RFS \( X \) is given by
+	\begin{equation}\label{key}
+		\rho(n) = \Pr(|X|=n) = \frac{1}{n!}\int \pi(\Bqty{\stVar_1,\, \ldots,\, \stVar_n}) \dx[\stVar_1]\cdot\ldots\cdot\dx[\stVar_n]
+	\end{equation}
+	It's nothing but a probability mass function (PMF) of a discrete random variable \( N \sim \rho(n) \).
+\end{defn}
+
+\begin{defn}[\emph{I.I.D. Cluster RFS}]
+	RFS \( X \) of cardinality \( n \) with FISST density
+	\begin{equation}\label{key}
+		\pi(X) = n! \rho(n) \prod_{i=1}^{n} p(\stVar_i).
+	\end{equation}
+	The RFS contains elements \( \stVar_1, \ldots, \stVar_n \) that are i.i.d. according to a probability density \( p(\stVar): \stSp\to\R \).
+\end{defn}
+
+\begin{defn}[\emph{Poisson RFS}]
+	I.I.D cluster with Poisson cardinality density, that is
+	\begin{equation}\label{key}
+		\rho(n \mid \lambda) = e^{-\lambda} \frac{\lambda^n}{n!}
+	\end{equation}
+	where \( \lambda \) is the expected number of objects.
+\end{defn}
 
 \begin{defn}[\emph{Bernoulli RFS}]
 \begin{equation}\label{eq:bernoulli_rfs}
@@ -256,16 +284,20 @@ FIIST density is not a probability density.
 \end{defn}
 
 \begin{defn}[\emph{Multi-Bernoulli RFS}]
-	Union of independent Bernoulli random finite sets.
+	Union of independent Bernoulli RFSs.
 \end{defn}
 
-\begin{defn}[\emph{I.I.D. Cluster RFS}]
-	RFS containing elements that are i.i.d. according to a probability density \( p(\stVar): \stSp\to\R \)
+\begin{defn}[\emph{Probability Hypothesis Density}]
+	For a RFS \( X \) and , the intensity function is defined as
+	\begin{equation}\label{key}
+		v(\stVar) = \int \pi(\Bqty{\stVar} \cup X) \dsx[X]
+	\end{equation}
+	Integrating intensity over a (deterministic) subset of state space \( S \subseteq \mathcal{X} \) yields the expected number of elements (expected cardinality) in \( S \)
+	\begin{equation}\label{key}
+		\E{|X \cap S|} = \int_S v(\stVar) \dx[\stVar]
+	\end{equation}
 \end{defn}
-
-\begin{defn}[\emph{Probability Hypothesis Density (Intensity Function)}]
-	content...
-\end{defn}
+Probability hypothesis density (PHD) is also known as intensity function.
 
 \begin{defn}[]
 	content...
@@ -334,5 +366,6 @@ measurement update
 
 
 
-
+\bibliographystyle{plainnat}
+\bibliography{refdb}
 \end{document}          
