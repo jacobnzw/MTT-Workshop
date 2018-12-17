@@ -73,7 +73,7 @@ class Model:
         truth = {
             'K': K,  # length of data/number of scans
             'X': np.empty((self.dim_state, K, total_tracks)) * np.nan,  # ground-truth target states
-            'N': np.zeros((K, 1)),  # number of targets at each time step
+            'N': np.zeros((K, ), dtype=np.int8),  # number of targets at each time step
             'track_list': np.empty((K, total_tracks)) * np.nan,  # absolute index target identities
             'total_tracks': total_tracks  # total number of appearing tracks
         }
@@ -95,11 +95,11 @@ class Model:
 
         # i-th column == birth/death times of i-th target
         bd_times = np.array([[1, 1, 1, 20, 20, 20, 40, 40, 60, 60, 80, 80],
-                             [70, K+1, 70, K+1, K+1, K+1, K+1, K+1, K+1, K+1, K+1, K+1, K+1]])
+                             [70, K+1, 70, K+1, K+1, K+1, K+1, K+1, K+1, K+1, K+1, K+1]])
 
         for target_ind in range(total_tracks):  # for each target
             tstate = xstart[:, target_ind]
-            for k in range(bd_times[0, target_ind], np.min(bd_times[1, target_ind], K)):
+            for k in range(bd_times[0, target_ind], min(bd_times[1, target_ind], K)):
                 # propagate state through constant-velocity (CV) model
                 truth['X'][:, k, target_ind] = self.F.dot(tstate)  # noiseless for now
                 truth['track_list'][k, target_ind] = target_ind
@@ -113,13 +113,22 @@ class Model:
         }
         for k in range(truth['K']):
             if truth['N'][k] > 0:  # if there are some targets in the scene
-                # indices of detected targets
-                idx = np.random.rand(truth['N'][k], 1) <= self.P_D
+                # determine if targets were detected (based on detection probability P_D)
+                detected = np.random.rand(truth['N'][k], ) <= self.P_D
+                x = truth['X'][:, k, :]
+                not_nan = ~np.isnan(x.sum(axis=0))
+                x = x[:, not_nan]
                 # generate measurement
-                meas['Z'][:, k, idx] = self.H.dot(truth['X'][k, idx]) + \
-                                       np.random.multivariate_normal(np.zeros((self.dim_obs,)), self.R, size=len(idx))
+                # FIXME: what if detected has less True values than not_nan (not all targets in the scene were detected)
+                r = np.random.multivariate_normal(np.zeros((self.dim_obs,)), self.R, size=len(detected)).T
+                meas['Z'][:, k, not_nan] = self.H.dot(x[:, detected]) + r
             N_c = np.random.poisson(self.lambda_c)  # number of clutter points
             # generate clutter
             # TODO: recast to Python
             # C = repmat(model.range_c(:, 1), [1 N_c])+ diag(model.range_c * [-1;1])*rand(model.z_dim, N_c);
             # meas.Z{k} = [meas.Z{k} C];
+
+
+mod = Model()
+gt_state = mod.gen_truth()
+meas = mod.gen_meas(gt_state)
