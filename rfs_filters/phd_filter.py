@@ -1,5 +1,5 @@
 import numpy as np
-
+from scipy.stats import invgamma
 
 """
 GMM-PHD filter for linear motion/measurement model.
@@ -136,7 +136,26 @@ class Model:
         return meas
 
 
+class GMPHDFilter:
+
+    def __init__(self, model):
+        self.model = model
+        self.L_max = 100
+        self.elim_threshold = 1e-5
+        self.merge_threshold = 4
+        self.P_G = 0.999  # gate size in percentage
+        self.gamma = invgamma.pdf(self.P_G, 0.0, 0.5 * self.model.dim_obs)  # FIXME
+        self.gate_flag = True
+
+    def filter(self, data):
+        est = {
+            'X': [],  # np.empty(data['X'].shape) * np.nan
+            'N': np.zeros((data['K'], )),
+        }
+
+
 mod = Model()
-gt_state = mod.gen_truth()
-meas = mod.gen_meas(gt_state)
-pass
+true_state = mod.gen_truth()
+meas = mod.gen_meas(true_state)
+filt = GMPHDFilter(mod)
+# est_state = filt.forward_pass(meas)
