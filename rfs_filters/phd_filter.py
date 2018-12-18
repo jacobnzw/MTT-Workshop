@@ -109,26 +109,34 @@ class Model:
     def gen_meas(self, truth):
         meas = {
             'K': truth['K'],
-            'Z': np.empty((self.dim_obs, truth['K'], truth['total_tracks'])) * np.nan,
+            'Z': []  # np.empty((self.dim_obs, truth['K'], truth['total_tracks'])) * np.nan,
         }
         for k in range(truth['K']):
+            Z_k = None
             if truth['N'][k] > 0:  # if there are some targets in the scene
-                # determine if targets were detected (based on detection probability P_D)
+                # determine which targets in the scene were detected (based on detection probability P_D)
                 detected = np.random.rand(truth['N'][k], ) <= self.P_D
                 x = truth['X'][:, k, :]
-                not_nan = ~np.isnan(x.sum(axis=0))
-                x = x[:, not_nan]
+                present_and_detected = ~np.isnan(x.sum(axis=0))
+                present_and_detected[present_and_detected == True] &= detected
+                x = x[:, present_and_detected]
+
                 # generate measurement
-                # FIXME: what if detected has less True values than not_nan (not all targets in the scene were detected)
-                r = np.random.multivariate_normal(np.zeros((self.dim_obs,)), self.R, size=len(detected)).T
-                meas['Z'][:, k, not_nan] = self.H.dot(x[:, detected]) + r
-            N_c = np.random.poisson(self.lambda_c)  # number of clutter points
+                r = np.random.multivariate_normal(np.zeros((self.dim_obs,)), self.R, size=x.shape[1]).T
+                # meas['Z'][:, k, present_and_detected] = self.H.dot(x) + r
+                Z_k = self.H.dot(x) + r
+
             # generate clutter
-            # TODO: recast to Python
-            # C = repmat(model.range_c(:, 1), [1 N_c])+ diag(model.range_c * [-1;1])*rand(model.z_dim, N_c);
-            # meas.Z{k} = [meas.Z{k} C];
+            N_c = np.random.poisson(self.lambda_c)  # number of clutter points
+            bounds = np.diag(self.range_c.dot(np.array([-1, 1])))
+            clutter = -1000.0 + bounds.dot(np.random.rand(self.dim_obs, N_c))
+            # measurement set = union of target measurements and clutter
+            Z_k = np.hstack((Z_k, clutter)) if Z_k is not None else clutter
+            meas['Z'].append(Z_k)
+        return meas
 
 
 mod = Model()
 gt_state = mod.gen_truth()
 meas = mod.gen_meas(gt_state)
+pass
