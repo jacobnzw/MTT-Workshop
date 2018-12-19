@@ -2,8 +2,14 @@ import numpy as np
 from scipy.stats import invgamma
 
 """
-GMM-PHD filter for linear motion/measurement model.
+GMM-PHD filter [1]_ for linear motion/measurement model assuming no target spawning.
 
+Based on the MATLAB implementation in the RFS tracking toolbox http://ba-tuong.vo-au.com/codes.html.
+
+References
+----------
+.. [1]: B.-N. Vo, and W. K. Ma, "The Gaussian mixture Probability Hypothesis Density Filter," 
+        IEEE Trans Signal Processing, Vol. 54, No. 11, pp. 4091-4104, 2006.
 """
 
 
@@ -137,6 +143,13 @@ class Model:
 
 
 class GMPHDFilter:
+    """
+    Gaussian mixture Probability Hypothesis Density Filter (GM-PHD) for a linear model.
+
+    Parameters
+    ----------
+    model : Model
+    """
 
     def __init__(self, model):
         self.model = model
@@ -146,12 +159,67 @@ class GMPHDFilter:
         self.P_G = 0.999  # gate size in percentage
         self.gamma = invgamma.pdf(self.P_G, 0.0, 0.5 * self.model.dim_obs)  # FIXME
         self.gate_flag = True
+        self.F_EPS = np.finfo(float).eps
 
     def filter(self, data):
         est = {
             'X': [],  # np.empty(data['X'].shape) * np.nan
             'N': np.zeros((data['K'], )),
         }
+
+        # initial prior
+        w_update = [self.F_EPS]
+        m_update = [np.array([0.1, 0, 0.1, 0])]
+        P_update = [np.diag([1, 1, 1, 1]) ** 2]
+        L_update = 1
+
+        w_predict = []
+        m_predict = []
+        P_predict = []
+
+        for k in range(data['K']):
+            # PREDICTION
+            for i in range(len(w_update)):
+                # surviving weights
+                w_predict.append(self.model.P_S * w_update[i])
+                # Kalman prediction
+                m_predict.append(self.model.F.dot(m_update[i]))
+                P_predict.append(self.model.F.dot(P_update[i]).dot(self.model.F.T) + self.model.Q)
+
+            # append birth components to weights
+            w_predict.append(self.model.w_birth)
+            m_predict.append(self.model.m_birth)
+            P_predict.append(self.model.P_birth)
+            # number of predicted components
+            L_predict = self.model.L_birth + L_update
+
+            # GATING
+            if self.gate_flag:
+                # do gating of measurement set
+                self._gate_meas_gms(data['Z'][k], m_predict, P_predict)
+
+            # TODO UPDATE
+            num_obs = len(data['Z'][k])  # number of measurements after gating
+            # missed detection term
+            w_update = [self.model.Q_D*w_predict[i] for i in range(len(w_predict))]
+            m_update = m_predict
+            P_update = P_predict
+
+            if num_obs > 0:  # if some measurements were detected
+                # num_obs detection terms
+
+                for i in range(num_obs):
+                    pass
+
+            # TODO MANAGEMENT OF MIXTURE COMPONENTS
+            # TODO STATE ESTIMATE EXTRACTION
+            # TODO DIAGNOSTICS
+
+    def _gate_meas_gms(self, z, m, P):
+        self.gamma
+        self.model
+        pass
+
 
 
 mod = Model()
