@@ -1,5 +1,6 @@
 import numpy as np
 from scipy.stats import invgamma
+import scipy.stats
 
 """
 GMM-PHD filter [1]_ for linear motion/measurement model assuming no target spawning.
@@ -198,7 +199,7 @@ class GMPHDFilter:
                 # do gating of measurement set
                 self._gate_meas_gms(data['Z'][k], m_predict, P_predict)
 
-            # TODO UPDATE
+            # UPDATE
             num_obs = len(data['Z'][k])  # number of measurements after gating
             # missed detection term
             w_update = [self.model.Q_D*w_predict[i] for i in range(len(w_predict))]
@@ -207,18 +208,101 @@ class GMPHDFilter:
 
             if num_obs > 0:  # if some measurements were detected
                 # num_obs detection terms
-
+                qz_temp, m_temp, P_temp = self._kalman_update(data['Z'][k], m_predict, P_predict)
                 for i in range(num_obs):
-                    pass
+                    w_temp = [self.model.P_D * w_predict[j] * qz_temp[i, j] for j in range(len(w_predict))]
+                    denom = self.model.lambda_c*self.model.pdf_c + sum(w_temp)
+                    w_temp = [w / denom for w in w_temp]
+
+                    # updated mixture component weights, means and covariances
+                    w_update.append(w_temp)
+                    m_update.append(m_temp[:, i, :])
+                    P_update.append(P_temp)
 
             # TODO MANAGEMENT OF MIXTURE COMPONENTS
             # TODO STATE ESTIMATE EXTRACTION
             # TODO DIAGNOSTICS
 
+    def _kalman_update(self, z, m_predict, P_predict):
+        num_obs, num_pred = z.shape[1], len(m_predict)
+        # space allocation
+        qz = np.empty((num_obs, num_pred))
+        m = np.empty((self.model.dim_state, num_obs, num_pred))
+        P = np.empty((self.model.dim_state, self.model.dim_state, num_pred))
+        I = np.eye(self.model.dim_state)
+
+        for i in range(len(m_predict)):
+            # predicted measurement mean, covariance
+            mz = self.model.H.dot(m_predict[i])
+            Pz = self.model.H.dot(P_predict[i]).dot(self.model.H.T) + self.model.R
+
+            # Kalman gain
+            iPz = np.linalg.inv(Pz)  # FIXME replace this atrocity with cho_solve
+            K_gain = P_predict[i].dot(self.model.H.T).dot(iPz)
+
+            for j in range(z.shape[1]):
+                qz[j, i] = scipy.stats.multivariate_normal.pdf(z[j], mz, Pz)
+            m[..., i] = m_predict[i][:, None] + K_gain.dot(z - mz[:, None])
+            P[..., i] = (I - K_gain.dot(self.model.H)).dot(P_predict)
+
+        return qz, m, P
+
     def _gate_meas_gms(self, z, m, P):
         self.gamma
         self.model
         pass
+
+    def gauss_prune(self, w, m, P, threshold):
+        """
+        Pruning of Gaussian mixture components based on threshold.
+
+        Parameters
+        ----------
+        w
+        m
+        P
+        threshold
+
+        Returns
+        -------
+
+        """
+        pass
+
+    def gauss_merge(self, w, m, P, threshold):
+        """
+        Merging of Gaussian mixture components based on threshold.
+
+        Parameters
+        ----------
+        w
+        m
+        P
+        threshold
+
+        Returns
+        -------
+
+        """
+        pass
+
+    def gauss_cap(self, w, m, P, threshold):
+        """
+        Capping of the number of Gaussian mixture components at given threshold.
+
+        Parameters
+        ----------
+        w
+        m
+        P
+        threshold
+
+        Returns
+        -------
+
+        """
+        pass
+
 
 
 
