@@ -37,7 +37,7 @@ class Model:
         # Poisson birth RFS parameters (multiple Gaussian components)
         self.L_birth = 4  # of Gaussian birth terms
         # weights, means, stds, covs of Gaussian birth terms
-        self.w_birth = 0.03 * np.ones((self.L_birth, 1))
+        self.w_birth = 0.03 * np.ones((self.L_birth, ))
         self.m_birth = np.zeros((self.dim_state, self.L_birth))
         self.B_birth = np.zeros((self.dim_state, self.dim_state, self.L_birth))
         self.P_birth = np.zeros((self.dim_state, self.dim_state, self.L_birth))
@@ -174,12 +174,9 @@ class GMPHDFilter:
         P_update = [np.diag([1, 1, 1, 1]) ** 2]
         L_update = 1
 
-        w_predict = []
-        m_predict = []
-        P_predict = []
-
         for k in range(data['K']):
             # PREDICTION
+            w_predict, m_predict, P_predict = [], [], []
             for i in range(len(w_update)):
                 # surviving weights
                 w_predict.append(self.model.P_S * w_update[i])
@@ -188,9 +185,9 @@ class GMPHDFilter:
                 P_predict.append(self.model.F.dot(P_update[i]).dot(self.model.F.T) + self.model.Q)
 
             # append birth components to weights
-            w_predict.append(self.model.w_birth)
-            m_predict.append(self.model.m_birth)
-            P_predict.append(self.model.P_birth)
+            w_predict = np.concatenate((np.asarray(w_predict), self.model.w_birth))
+            m_predict = np.concatenate((np.asarray(m_predict).T, self.model.m_birth), axis=-1)
+            P_predict = np.concatenate((np.asarray(P_predict).T, self.model.P_birth), axis=-1)
             # number of predicted components
             L_predict = self.model.L_birth + L_update
 
@@ -200,9 +197,9 @@ class GMPHDFilter:
                 data['Z'][k] = self._gate_meas_gms(data['Z'][k], m_predict, P_predict)
 
             # UPDATE
-            num_obs = len(data['Z'][k])  # number of measurements after gating
+            num_obs = data['Z'][k].shape[1]  # number of measurements after gating
             # missed detection term
-            w_update = [self.model.Q_D*w_predict[i] for i in range(len(w_predict))]
+            w_update = self.model.Q_D * w_predict
             m_update = m_predict
             P_update = P_predict
 
@@ -210,14 +207,14 @@ class GMPHDFilter:
                 # num_obs detection terms
                 qz_temp, m_temp, P_temp = self._kalman_update(data['Z'][k], m_predict, P_predict)
                 for i in range(num_obs):
-                    w_temp = [self.model.P_D * w_predict[j] * qz_temp[i, j] for j in range(len(w_predict))]
+                    w_temp = self.model.P_D * w_predict * qz_temp[i, :]
                     denom = self.model.lambda_c*self.model.pdf_c + sum(w_temp)
-                    w_temp = [w / denom for w in w_temp]
+                    w_temp /= denom
 
                     # updated mixture component weights, means and covariances
-                    w_update.append(w_temp)
-                    m_update.append(m_temp[:, i, :])
-                    P_update.append(P_temp)
+                    w_update = np.concatenate((w_update, w_temp))
+                    m_update = np.concatenate((m_update, m_temp[:, i, :]), axis=-1)
+                    P_update = np.concatenate((P_update, P_temp), axis=-1)
 
             # MANAGEMENT OF MIXTURE COMPONENTS
             L_posterior = len(w_update)
@@ -250,8 +247,10 @@ class GMPHDFilter:
                       'gm_elim= {:3d} | '
                       'gm_merg= {:3d}'.format(k, sum(w_update), est['N'][k], L_posterior, L_prune, L_merge))
 
+        return est
+
     def _kalman_update(self, z, m_predict, P_predict):
-        num_obs, num_pred = z.shape[1], len(m_predict)
+        num_obs, num_pred = z.shape[1], m_predict.shape[1]
         # space allocation
         qz = np.empty((num_obs, num_pred))
         m = np.empty((self.model.dim_state, num_obs, num_pred))
@@ -260,17 +259,17 @@ class GMPHDFilter:
 
         for i in range(len(m_predict)):
             # predicted measurement mean, covariance
-            mz = self.model.H.dot(m_predict[i])
-            Pz = self.model.H.dot(P_predict[i]).dot(self.model.H.T) + self.model.R
+            mz = self.model.H.dot(m_predict[..., i])
+            Pz = self.model.H.dot(P_predict[..., i]).dot(self.model.H.T) + self.model.R
 
             # Kalman gain
             iPz = np.linalg.inv(Pz)  # FIXME replace this atrocity with cho_solve
-            K_gain = P_predict[i].dot(self.model.H.T).dot(iPz)
+            K_gain = P_predict[..., i].dot(self.model.H.T).dot(iPz)
 
             for j in range(z.shape[1]):
-                qz[j, i] = scipy.stats.multivariate_normal.pdf(z[j], mz, Pz)
-            m[..., i] = m_predict[i][:, None] + K_gain.dot(z - mz[:, None])
-            P[..., i] = (I - K_gain.dot(self.model.H)).dot(P_predict)
+                qz[j, i] = scipy.stats.multivariate_normal.pdf(z[:, j], mz, Pz)
+            m[..., i] = m_predict[..., i, None] + K_gain.dot(z - mz[:, None])
+            P[..., i] = (I - K_gain.dot(self.model.H)).dot(P_predict[..., i])
 
         return qz, m, P
 
@@ -289,12 +288,12 @@ class GMPHDFilter:
         if len(z) == 0:
             return z
 
-        gated = np.array([])
+        gated = np.array([], dtype=np.int)
         for i in range(len(m)):
-            mz = self.model.H.dot(m[i])
-            Pz = self.model.H.dot(P[i]).dot(self.model.H.T) + self.model.R
+            mz = self.model.H.dot(m[..., i])
+            Pz = self.model.H.dot(P[..., i]).dot(self.model.H.T) + self.model.R
             dz = self._cho_inv_dot(Pz, z - mz[:, None])
-            gated = np.union1d(gated, np.where(dz.T.dot(dz) < self.gamma))
+            gated = np.union1d(gated, np.where((dz**2).sum(axis=0) < self.gamma))
         return z[:, gated]
 
     def _gauss_prune(self, w, m, P):
@@ -312,11 +311,8 @@ class GMPHDFilter:
 
         """
 
-        idx = np.where(np.asarray(w) > self.elim_threshold)
-        w = [w[i] for i in idx]
-        m = [m[i] for i in idx]
-        P = [P[i] for i in idx]
-        return w, m, P
+        idx = np.asarray(w) > self.elim_threshold
+        return w[idx], m[..., idx], P[..., idx]
 
     def _gauss_merge(self, w, m, P):
         """
@@ -333,26 +329,29 @@ class GMPHDFilter:
 
         """
 
+        # FIXME: runs for too long, problematic when idx = []
         idx = np.arange(len(w))
         el = 0
         w_merged, m_merged, P_merged = [], [], []
         while len(idx) != 0:
-            w_i = [w[i] for i in idx]
-            m_i = [w[i] for i in idx]
-            P_i = [w[i] for i in idx]
+            w_i = w[idx]
+            m_i = m[..., idx]
+            P_i = P[..., idx]
 
             # indices of mixture components too close to component with highest weight
             j = np.argmax(w_i)
-            too_close_idx = set([i for i in idx if (m[i] - m[j]).T.dot(np.linalg.inv(P[i])).dot(m[i] - m[j])])
+            too_close_idx = [i for i in idx if
+                             (m[..., i] - m[..., j]).T.dot(np.linalg.inv(P[..., i])).dot(m[..., i] - m[..., j])]
 
-            w_el = [w_i[i] for i in too_close_idx]
-            m_el = [m_i[i] for i in too_close_idx]
-            P_el = [P_i[i] for i in too_close_idx]
+            w_el = w_i[too_close_idx]
+            m_el = m_i[..., too_close_idx]
+            P_el = P_i[..., too_close_idx]
 
             w_merged.append(sum(w_el))
-            m_merged.append(sum([w_el[i]*m_el[i] for i in range(len(w_el))]) / w_merged[el])
-            P_merged.append(sum([w_el[i]*(P_el[i] + np.outer(m_merged[el] - m_el[i], m_merged[el] - m_el[i]))
-                                for i in range(len(w_el))]) / w_merged[el])
+            m_merged.append((w_el[None, :]*m_el).sum(axis=1) / w_merged[el])
+            dm = np.asarray(m_merged[el])[:, None] - m_el
+            P_merged.append((w_el[None, None, :]*(P_el + np.einsum('ij,kj->ikj', dm, dm))).sum(axis=-1) / w_merged[el])
+
             # update index list by removing indices of merged components
             idx = np.setdiff1d(idx, too_close_idx)
             # idx = [index for index in idx if index not in too_close_idx]
@@ -378,14 +377,11 @@ class GMPHDFilter:
         if len(w) > self.L_max:
             # L_max components in descending magnitude of weights
             idx = np.flip(np.argsort(np.asarray(w)))[:self.L_max]
-            w = [w[i] for i in idx]
-            m = [m[i] for i in idx]
-            P = [P[i] for i in idx]
-        return w, m, P
+        return w[idx], m[..., idx], P[..., idx]
 
 
 mod = Model()
 true_state = mod.gen_truth()
 meas = mod.gen_meas(true_state)
 filt = GMPHDFilter(mod)
-# est_state = filt.forward_pass(meas)
+est_state = filt.filter(meas)
