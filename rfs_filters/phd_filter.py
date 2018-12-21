@@ -1,5 +1,4 @@
 import numpy as np
-from scipy.stats import invgamma
 import scipy.stats
 
 """
@@ -158,7 +157,7 @@ class GMPHDFilter:
         self.elim_threshold = 1e-5
         self.merge_threshold = 4
         self.P_G = 0.999  # gate size in percentage
-        self.gamma = invgamma.pdf(self.P_G, 0.0, 0.5 * self.model.dim_obs)  # FIXME
+        self.gamma = scipy.stats.gamma.ppf(self.P_G, 0.5 * self.model.dim_obs, scale=2)
         self.gate_flag = True
         self.F_EPS = np.finfo(float).eps
 
@@ -167,7 +166,7 @@ class GMPHDFilter:
             'X': [],  # np.empty(data['X'].shape) * np.nan
             'N': np.zeros((data['K'], )),
         }
-        # TODO: w_, m_ and P_ probably better off being ndarrays
+        # TODO: w_, m_ and P_ are probably better off being ndarrays
         # initial prior
         w_update = [self.F_EPS]
         m_update = [np.array([0.1, 0, 0.1, 0])]
@@ -197,7 +196,7 @@ class GMPHDFilter:
             # GATING
             if self.gate_flag:
                 # do gating of measurement set
-                self._gate_meas_gms(data['Z'][k], m_predict, P_predict)
+                data['Z'][k] = self._gate_meas_gms(data['Z'][k], m_predict, P_predict)
 
             # UPDATE
             num_obs = len(data['Z'][k])  # number of measurements after gating
@@ -235,6 +234,7 @@ class GMPHDFilter:
             L_cap = len(w_update)
 
             # TODO STATE ESTIMATE EXTRACTION
+
             # TODO DIAGNOSTICS
 
     def _kalman_update(self, z, m_predict, P_predict):
@@ -261,10 +261,28 @@ class GMPHDFilter:
 
         return qz, m, P
 
+    @staticmethod
+    def _cho_inv_dot(A, b=None):
+        if A.ndim != 2:
+            raise ValueError('A must be 2-D array.')
+        if A.shape[0] != A.shape[1]:
+            raise ValueError('A must be square.')
+        if b is None:
+            b = np.eye(A.shape)
+        return scipy.linalg.cho_solve(scipy.linalg.cho_factor(A, lower=True), b)
+
     def _gate_meas_gms(self, z, m, P):
-        self.gamma
-        self.model
-        pass
+        # pass through empty measurement sets (arrays)
+        if len(z) == 0:
+            return z
+
+        gated = np.array([])
+        for i in range(len(m)):
+            mz = self.model.H.dot(m[i])
+            Pz = self.model.H.dot(P[i]).dot(self.model.H.T) + self.model.R
+            dz = self._cho_inv_dot(Pz, z - mz[:, None])
+            gated = np.union1d(gated, np.where(dz.T.dot(dz) < self.gamma))
+        return z[:, gated]
 
     def _gauss_prune(self, w, m, P):
         """
