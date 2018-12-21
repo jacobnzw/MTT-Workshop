@@ -167,7 +167,7 @@ class GMPHDFilter:
             'X': [],  # np.empty(data['X'].shape) * np.nan
             'N': np.zeros((data['K'], )),
         }
-
+        # TODO: w_, m_ and P_ probably better off being ndarrays
         # initial prior
         w_update = [self.F_EPS]
         m_update = [np.array([0.1, 0, 0.1, 0])]
@@ -219,7 +219,21 @@ class GMPHDFilter:
                     m_update.append(m_temp[:, i, :])
                     P_update.append(P_temp)
 
-            # TODO MANAGEMENT OF MIXTURE COMPONENTS
+            # MANAGEMENT OF MIXTURE COMPONENTS
+            L_posterior = len(w_update)
+
+            # prunning
+            w_update, m_update, P_update = self._gauss_prune(w_update, m_update, P_update)
+            L_prune = len(w_update)
+
+            # merging
+            w_update, m_update, P_update = self._gauss_merge(w_update, m_update, P_update)
+            L_merge = len(w_update)
+
+            # capping the number of mixture components at given max (self.L_max)
+            w_update, m_update, P_update = self._gauss_cap(w_update, m_update, P_update)
+            L_cap = len(w_update)
+
             # TODO STATE ESTIMATE EXTRACTION
             # TODO DIAGNOSTICS
 
@@ -252,7 +266,7 @@ class GMPHDFilter:
         self.model
         pass
 
-    def gauss_prune(self, w, m, P, threshold):
+    def _gauss_prune(self, w, m, P):
         """
         Pruning of Gaussian mixture components based on threshold.
 
@@ -261,15 +275,19 @@ class GMPHDFilter:
         w
         m
         P
-        threshold
 
         Returns
         -------
 
         """
-        pass
 
-    def gauss_merge(self, w, m, P, threshold):
+        idx = np.where(np.asarray(w) > self.elim_threshold)
+        w = [w[i] for i in idx]
+        m = [m[i] for i in idx]
+        P = [P[i] for i in idx]
+        return w, m, P
+
+    def _gauss_merge(self, w, m, P):
         """
         Merging of Gaussian mixture components based on threshold.
 
@@ -278,15 +296,40 @@ class GMPHDFilter:
         w
         m
         P
-        threshold
 
         Returns
         -------
 
         """
-        pass
 
-    def gauss_cap(self, w, m, P, threshold):
+        idx = np.arange(len(w))
+        el = 0
+        w_merged, m_merged, P_merged = [], [], []
+        while len(idx) != 0:
+            w_i = [w[i] for i in idx]
+            m_i = [w[i] for i in idx]
+            P_i = [w[i] for i in idx]
+
+            # indices of mixture components too close to component with highest weight
+            j = np.argmax(w_i)
+            too_close_idx = set([i for i in idx if (m[i] - m[j]).T.dot(np.linalg.inv(P[i])).dot(m[i] - m[j])])
+
+            w_el = [w_i[i] for i in too_close_idx]
+            m_el = [m_i[i] for i in too_close_idx]
+            P_el = [P_i[i] for i in too_close_idx]
+
+            w_merged.append(sum(w_el))
+            m_merged.append(sum([w_el[i]*m_el[i] for i in range(len(w_el))]) / w_merged[el])
+            P_merged.append(sum([w_el[i]*(P_el[i] + np.outer(m_merged[el] - m_el[i], m_merged[el] - m_el[i]))
+                                for i in range(len(w_el))]) / w_merged[el])
+            # update index list by removing indices of merged components
+            idx = np.setdiff1d(idx, too_close_idx)
+            # idx = [index for index in idx if index not in too_close_idx]
+            el += 1
+
+        return w_merged, m_merged, P_merged
+
+    def _gauss_cap(self, w, m, P):
         """
         Capping of the number of Gaussian mixture components at given threshold.
 
@@ -295,15 +338,19 @@ class GMPHDFilter:
         w
         m
         P
-        threshold
 
         Returns
         -------
 
         """
-        pass
 
-
+        if len(w) > self.L_max:
+            # L_max components in descending magnitude of weights
+            idx = np.flip(np.argsort(np.asarray(w)))[:self.L_max]
+            w = [w[i] for i in idx]
+            m = [m[i] for i in idx]
+            P = [P[i] for i in idx]
+        return w, m, P
 
 
 mod = Model()
