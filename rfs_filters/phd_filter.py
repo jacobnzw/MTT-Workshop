@@ -151,7 +151,7 @@ class GMPHDFilter:
     model : Model
     """
 
-    def __init__(self, model):
+    def __init__(self, model, diagnostics=True):
         self.model = model
         self.L_max = 100
         self.elim_threshold = 1e-5
@@ -159,6 +159,7 @@ class GMPHDFilter:
         self.P_G = 0.999  # gate size in percentage
         self.gamma = scipy.stats.gamma.ppf(self.P_G, 0.5 * self.model.dim_obs, scale=2)
         self.gate_flag = True
+        self.diagnostics = diagnostics
         self.F_EPS = np.finfo(float).eps
 
     def filter(self, data):
@@ -233,9 +234,21 @@ class GMPHDFilter:
             w_update, m_update, P_update = self._gauss_cap(w_update, m_update, P_update)
             L_cap = len(w_update)
 
-            # TODO STATE ESTIMATE EXTRACTION
+            # STATE ESTIMATE EXTRACTION
+            idx = [index for index in range(len(w_update)) if w_update[index] > 0.5]
+            for index in idx:
+                num_targets = np.round(w_update[index])
+                est['X'].append(np.tile(m_update[index], num_targets))
+                est['N'][k] += num_targets
 
-            # TODO DIAGNOSTICS
+            # DIAGNOSTICS
+            if self.diagnostics:
+                print('time= {:3d} | '
+                      'est_mean= {:4.2f} | '
+                      'est_card= {:3d} | '
+                      'gm_orig= {:3d} | '
+                      'gm_elim= {:3d} | '
+                      'gm_merg= {:3d}'.format(k, sum(w_update), est['N'][k], L_posterior, L_prune, L_merge))
 
     def _kalman_update(self, z, m_predict, P_predict):
         num_obs, num_pred = z.shape[1], len(m_predict)
