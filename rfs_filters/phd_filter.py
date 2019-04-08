@@ -107,7 +107,8 @@ class Model:
             tstate = xstart[:, target_ind]
             for k in range(bd_times[0, target_ind], min(bd_times[1, target_ind], K)):
                 # propagate state through constant-velocity (CV) model
-                truth['X'][:, k, target_ind] = self.F.dot(tstate)  # noiseless for now
+                tstate = self.F.dot(tstate)  # noiseless for now
+                truth['X'][:, k, target_ind] = tstate
                 truth['track_list'][k, target_ind] = target_ind
                 truth['N'][k] += 1
         return truth
