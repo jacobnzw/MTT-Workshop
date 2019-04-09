@@ -118,6 +118,7 @@ class Model:
             'K': truth['K'],
             'Z': []  # np.empty((self.dim_obs, truth['K'], truth['total_tracks'])) * np.nan,
         }
+        zero_mean = np.zeros((self.dim_obs, ))
         for k in range(truth['K']):
             Z_k = None
             if truth['N'][k] > 0:  # if there are some targets in the scene
@@ -129,7 +130,7 @@ class Model:
                 x = x[:, present_and_detected]
 
                 # generate measurement
-                r = np.random.multivariate_normal(np.zeros((self.dim_obs,)), self.R, size=x.shape[1]).T
+                r = np.random.multivariate_normal(zero_mean, self.R, size=x.shape[1]).T
                 # meas['Z'][:, k, present_and_detected] = self.H.dot(x) + r
                 Z_k = self.H.dot(x) + r
 
