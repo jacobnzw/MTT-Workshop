@@ -154,9 +154,9 @@ class GMPHDFilter:
 
     def __init__(self, model, diagnostics=True):
         self.model = model
-        self.L_max = 100
-        self.elim_threshold = 1e-5
-        self.merge_threshold = 4
+        self.L_max = 100  # maximum number of mixture components
+        self.elim_threshold = 1e-5  # pruning threshold
+        self.merge_threshold = 4.0  # merging threshold
         self.P_G = 0.999  # gate size in percentage
         self.gamma = scipy.stats.gamma.ppf(self.P_G, 0.5 * self.model.dim_obs, scale=2)
         self.gate_flag = True
@@ -315,7 +315,7 @@ class GMPHDFilter:
         idx = np.asarray(w) > self.elim_threshold
         return w[idx], m[..., idx], P[..., idx]
 
-    def _gauss_merge(self, w, m, P):
+    def _gauss_merge(self, w, m, P):  # TODO: test this against the MATLAB counterpart with simple inputs
         """
         Merging of Gaussian mixture components based on threshold.
 
@@ -341,9 +341,12 @@ class GMPHDFilter:
 
             # indices of mixture components too close to component with highest weight
             j = np.argmax(w_i)
+            iP_j = np.linalg.inv(P[..., j])
             too_close_idx = [i for i in idx if
-                             (m[..., i] - m[..., j]).T.dot(np.linalg.inv(P[..., i])).dot(m[..., i] - m[..., j])]
+                             (m[..., i] - m[..., j]).T.dot(iP_j).dot(m[..., i] - m[..., j])
+                             <= self.merge_threshold]
 
+            # components to be merged
             w_el = w_i[too_close_idx]
             m_el = m_i[..., too_close_idx]
             P_el = P_i[..., too_close_idx]
@@ -354,9 +357,11 @@ class GMPHDFilter:
             P_merged.append((w_el[None, None, :]*(P_el + np.einsum('ij,kj->ikj', dm, dm))).sum(axis=-1) / w_merged[el])
 
             # update index list by removing indices of merged components
+            # FIXME: infinite loop when len(idx) > 0 and len(too_close_idx) == 0
             idx = np.setdiff1d(idx, too_close_idx)
             # idx = [index for index in idx if index not in too_close_idx]
             el += 1
+            print('len(idx): {:d}'.format(len(idx)))
 
         return w_merged, m_merged, P_merged
 
@@ -380,6 +385,7 @@ class GMPHDFilter:
             idx = np.flip(np.argsort(np.asarray(w)))[:self.L_max]
         return w[idx], m[..., idx], P[..., idx]
 
+# TODO: create a way to import state and measurements from MATLAB implementation for debugging purposes.
 
 mod = Model()
 true_state = mod.gen_truth()
