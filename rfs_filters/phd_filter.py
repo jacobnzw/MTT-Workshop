@@ -222,15 +222,15 @@ class GMPHDFilter:
             L_posterior = len(w_update)
 
             # prunning
-            w_update, m_update, P_update = self._gauss_prune(w_update, m_update, P_update)
+            w_update, m_update, P_update = gauss_prune(w_update, m_update, P_update, self.elim_threshold)
             L_prune = len(w_update)
 
             # merging
-            w_update, m_update, P_update = self._gauss_merge(w_update, m_update, P_update)
+            w_update, m_update, P_update = gauss_merge(w_update, m_update, P_update, self.merge_threshold)
             L_merge = len(w_update)
 
             # capping the number of mixture components at given max (self.L_max)
-            w_update, m_update, P_update = self._gauss_cap(w_update, m_update, P_update)
+            w_update, m_update, P_update = gauss_cap(w_update, m_update, P_update, self.L_max)
             L_cap = len(w_update)
 
             # STATE ESTIMATE EXTRACTION
@@ -298,98 +298,106 @@ class GMPHDFilter:
             gated = np.union1d(gated, np.where((dz**2).sum(axis=0) < self.gamma))
         return z[:, gated]
 
-    def _gauss_prune(self, w, m, P):
-        """
-        Pruning of Gaussian mixture components based on threshold.
 
-        Parameters
-        ----------
-        w
-        m
-        P
+def gauss_prune(w, m, P, elimination_threshold=1e-5):
+    """
+    Pruning of Gaussian mixture components based on threshold.
 
-        Returns
-        -------
+    Parameters
+    ----------
+    w
+    m
+    P
+    elimination_threshold
 
-        """
+    Returns
+    -------
 
-        idx = np.asarray(w) > self.elim_threshold
-        return w[idx], m[..., idx], P[..., idx]
+    """
 
-    def _gauss_merge(self, w, m, P):  # TODO: test this against the MATLAB counterpart with simple inputs
-        """
-        Merging of Gaussian mixture components based on threshold.
+    idx = np.asarray(w) > elimination_threshold
+    return w[idx], m[..., idx], P[..., idx]
 
-        Parameters
-        ----------
-        w
-        m
-        P
 
-        Returns
-        -------
+def gauss_merge(w, m, P, merge_threshold=4.0):  # TODO: test this against the MATLAB counterpart with simple inputs
+    """
+    Merging of Gaussian mixture components based on threshold.
 
-        """
+    Parameters
+    ----------
+    w
+    m
+    P
+    merge_threshold
 
-        # FIXME: runs for too long, problematic when idx = []
-        idx = np.arange(len(w))
-        el = 0
-        w_merged, m_merged, P_merged = [], [], []
-        while len(idx) != 0:
-            w_i = w[idx]
-            m_i = m[..., idx]
-            P_i = P[..., idx]
+    Returns
+    -------
 
-            # indices of mixture components too close to component with highest weight
-            j = np.argmax(w_i)
-            iP_j = np.linalg.inv(P[..., j])
-            too_close_idx = [i for i in idx if
-                             (m[..., i] - m[..., j]).T.dot(iP_j).dot(m[..., i] - m[..., j])
-                             <= self.merge_threshold]
+    """
 
-            # components to be merged
-            w_el = w_i[too_close_idx]
-            m_el = m_i[..., too_close_idx]
-            P_el = P_i[..., too_close_idx]
+    # FIXME: runs for too long, problematic when idx = []
+    idx = np.arange(len(w))
+    el = 0
+    w_merged, m_merged, P_merged = [], [], []
+    while len(idx) != 0:
+        w_i = w[idx]
+        m_i = m[..., idx]
+        P_i = P[..., idx]
 
-            w_merged.append(sum(w_el))
-            m_merged.append((w_el[None, :]*m_el).sum(axis=1) / w_merged[el])
-            dm = np.asarray(m_merged[el])[:, None] - m_el
-            P_merged.append((w_el[None, None, :]*(P_el + np.einsum('ij,kj->ikj', dm, dm))).sum(axis=-1) / w_merged[el])
+        # indices of mixture components too close to component with highest weight
+        j = np.argmax(w_i)
+        iP_j = np.linalg.inv(P[..., j])
+        too_close_idx = [i for i in idx if
+                         (m[..., i] - m[..., j]).T.dot(iP_j).dot(m[..., i] - m[..., j])
+                         <= merge_threshold]
 
-            # update index list by removing indices of merged components
-            # FIXME: infinite loop when len(idx) > 0 and len(too_close_idx) == 0
-            idx = np.setdiff1d(idx, too_close_idx)
-            # idx = [index for index in idx if index not in too_close_idx]
-            el += 1
-            print('len(idx): {:d}'.format(len(idx)))
+        # components to be merged
+        w_el = w_i[too_close_idx]
+        m_el = m_i[..., too_close_idx]
+        P_el = P_i[..., too_close_idx]
 
-        return w_merged, m_merged, P_merged
+        w_merged.append(sum(w_el))
+        m_merged.append((w_el[None, :]*m_el).sum(axis=1) / w_merged[el])
+        dm = np.asarray(m_merged[el])[:, None] - m_el
+        P_merged.append((w_el[None, None, :]*(P_el + np.einsum('ij,kj->ikj', dm, dm))).sum(axis=-1) / w_merged[el])
 
-    def _gauss_cap(self, w, m, P):
-        """
-        Capping of the number of Gaussian mixture components at given threshold.
+        # update index list by removing indices of merged components
+        # FIXME: infinite loop when len(idx) > 0 and len(too_close_idx) == 0
+        idx = np.setdiff1d(idx, too_close_idx)
+        # idx = [index for index in idx if index not in too_close_idx]
+        el += 1
+        print('len(idx): {:d}'.format(len(idx)))
 
-        Parameters
-        ----------
-        w
-        m
-        P
+    return np.asarray(w_merged), np.asarray(m_merged), np.asarray(P_merged)
 
-        Returns
-        -------
 
-        """
+def gauss_cap(w, m, P, max_comp=100):
+    """
+    Capping of the number of Gaussian mixture components at given threshold.
 
-        if len(w) > self.L_max:
-            # L_max components in descending magnitude of weights
-            idx = np.flip(np.argsort(np.asarray(w)))[:self.L_max]
-        return w[idx], m[..., idx], P[..., idx]
+    Parameters
+    ----------
+    w
+    m
+    P
+    max_comp
+
+    Returns
+    -------
+
+    """
+
+    if len(w) > max_comp:
+        # L_max components in descending magnitude of weights
+        idx = np.flip(np.argsort(np.asarray(w)))[:max_comp]
+    return w[idx], m[..., idx], P[..., idx]
 
 # TODO: create a way to import state and measurements from MATLAB implementation for debugging purposes.
 
-mod = Model()
-true_state = mod.gen_truth()
-meas = mod.gen_meas(true_state)
-filt = GMPHDFilter(mod)
-est_state = filt.filter(meas)
+
+if __name__ == '__main__':
+    mod = Model()
+    true_state = mod.gen_truth()
+    meas = mod.gen_meas(true_state)
+    filt = GMPHDFilter(mod)
+    est_state = filt.filter(meas)
