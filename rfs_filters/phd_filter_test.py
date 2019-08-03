@@ -14,7 +14,10 @@ class GaussianMixtureTest(unittest.TestCase):
         ], dtype=np.float).T
         covs = np.dstack((0.5*np.eye(2), 0.25*np.eye(2), np.eye(2)))
         new_weights, new_means, new_covs = gauss_merge(weights, means, covs)
-        pass
+
+        self.assertTrue(np.array_equal(new_weights, np.array([0.5, 0.5])))
+        self.assertTrue(np.array_equal(new_means, np.array([[0.0, 5.0], [0.2, 0]]).T))
+        self.assertTrue(np.array_equal(new_covs, np.stack((np.eye(2), 0.45*np.eye(2)))))
 
 
 if __name__ == '__main__':

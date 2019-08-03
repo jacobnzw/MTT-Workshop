@@ -1,5 +1,6 @@
 import numpy as np
 import scipy.stats
+from numpy import newaxis as na
 
 """
 GMM-PHD filter [1]_ for linear motion/measurement model assuming no target spawning.
@@ -357,18 +358,20 @@ def gauss_merge(w, m, P, merge_threshold=4.0):  # TODO: test this against the MA
         P_el = P_i[..., too_close_idx]
 
         w_merged.append(sum(w_el))
-        m_merged.append((w_el[None, :]*m_el).sum(axis=1) / w_merged[el])
-        dm = np.asarray(m_merged[el])[:, None] - m_el
-        P_merged.append((w_el[None, None, :]*(P_el + np.einsum('ij,kj->ikj', dm, dm))).sum(axis=-1) / w_merged[el])
+        m_merged.append((w_el[na, :]*m_el).sum(axis=1) / w_merged[el])
+        # covariance merging according to MATLAB IMPLEMENTATION
+        P_merged.append((w_el[na, na, :] * P_el).sum(axis=-1) / w_merged[el])
+
+        # covariance merging according to PAPER
+        # dm = np.asarray(m_merged[el])[:, None] - m_el
+        # P_merged.append((w_el[None, None, :]*(P_el + np.einsum('ij,kj->ikj', dm, dm))).sum(axis=-1) / w_merged[el])
 
         # update index list by removing indices of merged components
         # FIXME: infinite loop when len(idx) > 0 and len(too_close_idx) == 0
         idx = np.setdiff1d(idx, too_close_idx)
-        # idx = [index for index in idx if index not in too_close_idx]
         el += 1
-        print('len(idx): {:d}'.format(len(idx)))
 
-    return np.asarray(w_merged), np.asarray(m_merged), np.asarray(P_merged)
+    return np.asarray(w_merged), np.asarray(m_merged).T, np.asarray(P_merged)
 
 
 def gauss_cap(w, m, P, max_comp=100):
