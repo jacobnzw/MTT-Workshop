@@ -168,7 +168,7 @@ class GMPHDFilter:
     def filter(self, data):
         est = {
             'X': [],  # np.empty(data['X'].shape) * np.nan
-            'N': np.zeros((data['K'], )),
+            'N': np.zeros((data['K'], ), dtype=np.int16),
         }
         # TODO: w_, m_ and P_ are probably better off being ndarrays
         # initial prior
@@ -180,8 +180,9 @@ class GMPHDFilter:
         for k in range(data['K']):
             # PREDICTION
             w_predict, m_predict, P_predict = [], [], []
-            for i in range(len(w_update)):
+            for i in range(len(w_update)):  # TODO: w_predict, m_predict and P_predict can be pre-allocated ndarrays
                 # surviving weights
+                # FIXME: *_update vars are ndarrays after first iter, thus indexing must be done differently
                 w_predict.append(self.model.P_S * w_update[i])
                 # Kalman prediction
                 m_predict.append(self.model.F.dot(m_update[i]))
@@ -202,9 +203,9 @@ class GMPHDFilter:
             # UPDATE
             num_obs = data['Z'][k].shape[1]  # number of measurements after gating
             # missed detection term
-            w_update = self.model.Q_D * w_predict
-            m_update = m_predict
-            P_update = P_predict
+            w_update = self.model.Q_D * w_predict.copy()
+            m_update = m_predict.copy()
+            P_update = P_predict.copy()
 
             if num_obs > 0:  # if some measurements were detected
                 # num_obs detection terms
@@ -223,15 +224,17 @@ class GMPHDFilter:
             L_posterior = len(w_update)
 
             # prunning
+            print('prunning ...')
             w_update, m_update, P_update = gauss_prune(w_update, m_update, P_update, self.elim_threshold)
             L_prune = len(w_update)
 
             # merging
-            # FIXME: P_update fed in are not symmetric, error is above
+            print('merging ...')
             w_update, m_update, P_update = gauss_merge(w_update, m_update, P_update, self.merge_threshold)
             L_merge = len(w_update)
 
             # capping the number of mixture components at given max (self.L_max)
+            print('capping ...')
             w_update, m_update, P_update = gauss_cap(w_update, m_update, P_update, self.L_max)
             L_cap = len(w_update)
 
@@ -321,7 +324,7 @@ def gauss_prune(w, m, P, elimination_threshold=1e-5):
     return w[idx], m[..., idx], P[..., idx]
 
 
-def gauss_merge(w, m, P, merge_threshold=4.0):  # TODO: test this against the MATLAB counterpart with simple inputs
+def gauss_merge(w, m, P, merge_threshold=4.0):
     """
     Merging of Gaussian mixture components based on threshold.
 
@@ -337,26 +340,22 @@ def gauss_merge(w, m, P, merge_threshold=4.0):  # TODO: test this against the MA
 
     """
 
-    # FIXME: runs for too long, problematic when idx = []
     idx = np.arange(len(w))
     el = 0
     w_merged, m_merged, P_merged = [], [], []
     while len(idx) != 0:
         w_i = w[idx]
-        m_i = m[..., idx]
-        P_i = P[..., idx]
 
         # indices of mixture components too close to component with highest weight
-        j = np.argmax(w_i)
+        j = idx[np.argmax(w_i)]
         iP_j = np.linalg.inv(P[..., j])
-        too_close_idx = [i for i in idx if
-                         (m[..., i] - m[..., j]).T.dot(iP_j).dot(m[..., i] - m[..., j])
-                         <= merge_threshold]
+        too_close_idx = [i for i in idx if  # TODO: pre-compute m_i - m_j before the list comprehension
+                         (m[:, i] - m[:, j]).T.dot(iP_j).dot(m[:, i] - m[:, j]) <= merge_threshold]
 
         # components to be merged
-        w_el = w_i[too_close_idx]
-        m_el = m_i[..., too_close_idx]
-        P_el = P_i[..., too_close_idx]
+        w_el = w[too_close_idx]
+        m_el = m[..., too_close_idx]
+        P_el = P[..., too_close_idx]
 
         w_merged.append(sum(w_el))
         m_merged.append((w_el[na, :]*m_el).sum(axis=1) / w_merged[el])
@@ -368,7 +367,6 @@ def gauss_merge(w, m, P, merge_threshold=4.0):  # TODO: test this against the MA
         # P_merged.append((w_el[None, None, :]*(P_el + np.einsum('ij,kj->ikj', dm, dm))).sum(axis=-1) / w_merged[el])
 
         # update index list by removing indices of merged components
-        # FIXME: infinite loop when len(idx) > 0 and len(too_close_idx) == 0
         idx = np.setdiff1d(idx, too_close_idx)
         el += 1
 
