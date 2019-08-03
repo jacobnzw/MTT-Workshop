@@ -227,6 +227,7 @@ class GMPHDFilter:
             L_prune = len(w_update)
 
             # merging
+            # FIXME: P_update fed in are not symmetric, error is above
             w_update, m_update, P_update = gauss_merge(w_update, m_update, P_update, self.merge_threshold)
             L_merge = len(w_update)
 
@@ -371,7 +372,7 @@ def gauss_merge(w, m, P, merge_threshold=4.0):  # TODO: test this against the MA
         idx = np.setdiff1d(idx, too_close_idx)
         el += 1
 
-    return np.asarray(w_merged), np.asarray(m_merged).T, np.asarray(P_merged)
+    return np.asarray(w_merged), np.asarray(m_merged).T, np.asarray(P_merged).T
 
 
 def gauss_cap(w, m, P, max_comp=100):
@@ -393,7 +394,9 @@ def gauss_cap(w, m, P, max_comp=100):
     if len(w) > max_comp:
         # L_max components in descending magnitude of weights
         idx = np.flip(np.argsort(np.asarray(w)))[:max_comp]
-    return w[idx], m[..., idx], P[..., idx]
+        return w[idx], m[..., idx], P[..., idx]
+    else:
+        return w, m, P
 
 # TODO: create a way to import state and measurements from MATLAB implementation for debugging purposes.
 
