@@ -396,12 +396,39 @@ def gauss_cap(w, m, P, max_comp=100):
     else:
         return w, m, P
 
-# TODO: create a way to import state and measurements from MATLAB implementation for debugging purposes.
+
+def unpack_matfile(mat_filename):
+    """
+    Unpack multi-target state sequence and measurements from MAT-file for debugging purposes.
+    Necessary because MATLAB implementation uses cell arrays, which are otherwise hard to work with in Python.
+
+    Parameters
+    ----------
+    mat_filename : str
+
+    Returns
+    -------
+    : dict
+
+    """
+
+    # TODO: extend to load state
+
+    from scipy.io import loadmat
+    dd = loadmat(mat_filename)
+
+    # extract multi-target measurements Z and number of time steps K
+    meas = {
+        'K': dd['meas'][0, 0][0][0, 0],
+        'Z': list(dd['meas'][0, 0][1][:, 0])
+    }
+    return meas
 
 
 if __name__ == '__main__':
     mod = Model()
-    true_state = mod.gen_truth()
-    meas = mod.gen_meas(true_state)
+    # true_state = mod.gen_truth()
+    # meas = mod.gen_meas(true_state)
+    meas = unpack_matfile('gmphd_meas.mat')
     filt = GMPHDFilter(mod)
     est_state = filt.filter(meas)
