@@ -170,28 +170,29 @@ class GMPHDFilter:
             'X': [],  # np.empty(data['X'].shape) * np.nan
             'N': np.zeros((data['K'], ), dtype=np.int16),
         }
-        # TODO: w_, m_ and P_ are probably better off being ndarrays
         # initial prior
-        w_update = [self.F_EPS]
-        m_update = [np.array([0.1, 0, 0.1, 0])]
-        P_update = [np.diag([1, 1, 1, 1]) ** 2]
+        w_update = np.array([self.F_EPS])
+        m_update = np.array([[0.1, 0, 0.1, 0]]).T
+        P_update = np.expand_dims(np.diag([1, 1, 1, 1]) ** 2, axis=-1)  # add axis to the end -> (4,4,1)
         L_update = 1
 
         for k in range(data['K']):
             # PREDICTION
-            w_predict, m_predict, P_predict = [], [], []
-            for i in range(len(w_update)):  # TODO: w_predict, m_predict and P_predict can be pre-allocated ndarrays
+            num_updt = len(w_update)
+            w_predict = np.empty((num_updt, ))
+            m_predict = np.empty((self.model.dim_state, num_updt))
+            P_predict = np.empty((self.model.dim_state, self.model.dim_state, num_updt))
+            for i in range(len(w_update)):
                 # surviving weights
-                # FIXME: *_update vars are ndarrays after first iter, thus indexing must be done differently
-                w_predict.append(self.model.P_S * w_update[i])
+                w_predict[i] = self.model.P_S * w_update[i]
                 # Kalman prediction
-                m_predict.append(self.model.F.dot(m_update[i]))
-                P_predict.append(self.model.F.dot(P_update[i]).dot(self.model.F.T) + self.model.Q)
+                m_predict[..., i] = self.model.F.dot(m_update[..., i])
+                P_predict[..., i] = self.model.F.dot(P_update[..., i]).dot(self.model.F.T) + self.model.Q
 
             # append birth components to weights
-            w_predict = np.concatenate((np.asarray(w_predict), self.model.w_birth))
-            m_predict = np.concatenate((np.asarray(m_predict).T, self.model.m_birth), axis=-1)
-            P_predict = np.concatenate((np.asarray(P_predict).T, self.model.P_birth), axis=-1)
+            w_predict = np.concatenate((w_predict, self.model.w_birth))
+            m_predict = np.concatenate((m_predict, self.model.m_birth), axis=-1)
+            P_predict = np.concatenate((P_predict, self.model.P_birth), axis=-1)
             # number of predicted components
             L_predict = self.model.L_birth + L_update
 
