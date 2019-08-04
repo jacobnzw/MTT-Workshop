@@ -246,8 +246,8 @@ class GMPHDFilter:
             # DIAGNOSTICS
             if self.diagnostics:
                 print('time = {:3d} | '
-                      'est_mean = {:4.2f} | '
-                      'est_card = {:3d} | '
+                      'est_mean = {:4.2f} | '  # integral of the PHD == expected # targets in the whole state space
+                      'est_card = {:3d} | '  # targets estimated by the filter (estimated cardinality of the state RFS)
                       'gm_orig = {:3d} | '
                       'gm_elim = {:3d} | '
                       'gm_merg = {:3d}'.format(k, sum(w_update), est['N'][k], L_posterior, L_prune, L_merge))
@@ -280,11 +280,11 @@ class GMPHDFilter:
 
     def _gate_meas_gms(self, z, m, P):
         # pass through empty measurement sets (arrays)
-        if len(z) == 0:
+        if z.shape[1] == 0:
             return z
 
         gated = np.array([], dtype=np.int)
-        for i in range(len(m)):
+        for i in range(m.shape[1]):
             mz = self.model.H.dot(m[..., i])
             Pz = self.model.H.dot(P[..., i]).dot(self.model.H.T) + self.model.R
             dz = scipy.linalg.solve_triangular(scipy.linalg.cholesky(Pz), z - mz[:, None])
