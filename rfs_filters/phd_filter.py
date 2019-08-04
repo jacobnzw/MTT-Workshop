@@ -237,10 +237,9 @@ class GMPHDFilter:
             L_cap = len(w_update)
 
             # STATE ESTIMATE EXTRACTION
-            idx = [index for index in range(len(w_update)) if w_update[index] > 0.5]
-            for index in idx:
-                num_targets = int(np.round(w_update[index]))
-                est['X'].append(np.tile(m_update[index], num_targets))
+            for i in (w_update > 0.5).nonzero()[0]:
+                num_targets = int(np.round(w_update[i]))
+                est['X'].append(np.tile(m_update[..., i], num_targets))
                 est['N'][k] += num_targets
 
             # DIAGNOSTICS
