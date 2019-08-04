@@ -149,6 +149,11 @@ class GMPHDFilter:
     """
     Gaussian mixture Probability Hypothesis Density Filter (GM-PHD) for a linear model.
 
+    Notes
+    -----
+    GM-PHD produces target estimates for each step, but can't tell which of the estimates form a track.
+    The filters based on the labeled random finite sets can do this.
+
     Parameters
     ----------
     model : Model
@@ -414,8 +419,13 @@ def unpack_matfile(mat_filename):
 
 if __name__ == '__main__':
     mod = Model()
-    # true_state = mod.gen_truth()
-    # meas = mod.gen_meas(true_state)
-    meas = unpack_matfile('gmphd_meas.mat')
+    true_state = mod.gen_truth()
+    meas = mod.gen_meas(true_state)
+    # meas = unpack_matfile('gmphd_meas.mat')
     filt = GMPHDFilter(mod)
     est_state = filt.filter(meas)
+
+    # TODO: plot of true and estimated state RFS cardinality
+    # TODO: plot of x and y coordinates in time (true, estimates, measurements)
+    # TODO: x/y plot of ground truth tracks (multi-target states)
+    # TODO: plot of OSPA metrics
