@@ -177,6 +177,7 @@ class GMPHDFilter:
 
         for k in range(data['K']):
             # PREDICTION
+            # TODO: can be done without the loop, and thus w/o pre-allocs and the concatenation!
             num_update = len(w_update)
             w_predict = np.empty((num_update, ))
             m_predict = np.empty((self.model.dim_state, num_update))
@@ -189,9 +190,9 @@ class GMPHDFilter:
                 P_predict[..., i] = self.model.F.dot(P_update[..., i]).dot(self.model.F.T) + self.model.Q
 
             # append birth components to weights
-            w_predict = np.concatenate((w_predict, self.model.w_birth))
-            m_predict = np.concatenate((m_predict, self.model.m_birth), axis=-1)
-            P_predict = np.concatenate((P_predict, self.model.P_birth), axis=-1)
+            w_predict = np.concatenate((self.model.w_birth, w_predict))
+            m_predict = np.concatenate((self.model.m_birth, m_predict), axis=-1)
+            P_predict = np.concatenate((self.model.P_birth, P_predict), axis=-1)
             # number of predicted components
             L_predict = self.model.L_birth + num_update
 
@@ -280,16 +281,6 @@ class GMPHDFilter:
 
         return qz, m, P
 
-    @staticmethod
-    def _cho_inv_dot(A, b=None):
-        if A.ndim != 2:
-            raise ValueError('A must be 2-D array.')
-        if A.shape[0] != A.shape[1]:
-            raise ValueError('A must be square.')
-        if b is None:
-            b = np.eye(A.shape)
-        return scipy.linalg.cho_solve(scipy.linalg.cho_factor(A, lower=True), b)
-
     def _gate_meas_gms(self, z, m, P):
         # pass through empty measurement sets (arrays)
         if len(z) == 0:
@@ -299,7 +290,7 @@ class GMPHDFilter:
         for i in range(len(m)):
             mz = self.model.H.dot(m[..., i])
             Pz = self.model.H.dot(P[..., i]).dot(self.model.H.T) + self.model.R
-            dz = self._cho_inv_dot(Pz, z - mz[:, None])
+            dz = scipy.linalg.solve_triangular(scipy.linalg.cholesky(Pz), z - mz[:, None])
             gated = np.union1d(gated, np.where((dz**2).sum(axis=0) < self.gamma))
         return z[:, gated]
 
