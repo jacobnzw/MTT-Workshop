@@ -174,15 +174,14 @@ class GMPHDFilter:
         w_update = np.array([self.F_EPS])
         m_update = np.array([[0.1, 0, 0.1, 0]]).T
         P_update = np.expand_dims(np.diag([1, 1, 1, 1]) ** 2, axis=-1)  # add axis to the end -> (4,4,1)
-        L_update = 1
 
         for k in range(data['K']):
             # PREDICTION
-            num_updt = len(w_update)
-            w_predict = np.empty((num_updt, ))
-            m_predict = np.empty((self.model.dim_state, num_updt))
-            P_predict = np.empty((self.model.dim_state, self.model.dim_state, num_updt))
-            for i in range(len(w_update)):
+            num_update = len(w_update)
+            w_predict = np.empty((num_update, ))
+            m_predict = np.empty((self.model.dim_state, num_update))
+            P_predict = np.empty((self.model.dim_state, self.model.dim_state, num_update))
+            for i in range(num_update):
                 # surviving weights
                 w_predict[i] = self.model.P_S * w_update[i]
                 # Kalman prediction
@@ -194,7 +193,7 @@ class GMPHDFilter:
             m_predict = np.concatenate((m_predict, self.model.m_birth), axis=-1)
             P_predict = np.concatenate((P_predict, self.model.P_birth), axis=-1)
             # number of predicted components
-            L_predict = self.model.L_birth + L_update
+            L_predict = self.model.L_birth + num_update
 
             # GATING
             if self.gate_flag:
@@ -242,18 +241,18 @@ class GMPHDFilter:
             # STATE ESTIMATE EXTRACTION
             idx = [index for index in range(len(w_update)) if w_update[index] > 0.5]
             for index in idx:
-                num_targets = np.round(w_update[index])
+                num_targets = int(np.round(w_update[index]))
                 est['X'].append(np.tile(m_update[index], num_targets))
                 est['N'][k] += num_targets
 
             # DIAGNOSTICS
             if self.diagnostics:
-                print('time= {:3d} | '
-                      'est_mean= {:4.2f} | '
-                      'est_card= {:3d} | '
-                      'gm_orig= {:3d} | '
-                      'gm_elim= {:3d} | '
-                      'gm_merg= {:3d}'.format(k, sum(w_update), est['N'][k], L_posterior, L_prune, L_merge))
+                print('time = {:3d} | '
+                      'est_mean = {:4.2f} | '
+                      'est_card = {:3d} | '
+                      'gm_orig = {:3d} | '
+                      'gm_elim = {:3d} | '
+                      'gm_merg = {:3d}'.format(k, sum(w_update), est['N'][k], L_posterior, L_prune, L_merge))
 
         return est
 
