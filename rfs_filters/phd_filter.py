@@ -211,7 +211,7 @@ class GMPHDFilter:
             if num_obs > 0:  # if some measurements were detected
                 # num_obs detection terms
                 qz_temp, m_temp, P_temp = self._kalman_update(data['Z'][k], m_predict, P_predict)
-                for i in range(num_obs):
+                for i in range(num_obs):  # TODO: can be done w/o the loop!
                     w_temp = self.model.P_D * w_predict * qz_temp[i, :]
                     denom = self.model.lambda_c*self.model.pdf_c + sum(w_temp)
                     w_temp /= denom
@@ -225,17 +225,14 @@ class GMPHDFilter:
             L_posterior = len(w_update)
 
             # prunning
-            print('prunning ...')
             w_update, m_update, P_update = gauss_prune(w_update, m_update, P_update, self.elim_threshold)
             L_prune = len(w_update)
 
             # merging
-            print('merging ...')
             w_update, m_update, P_update = gauss_merge(w_update, m_update, P_update, self.merge_threshold)
             L_merge = len(w_update)
 
             # capping the number of mixture components at given max (self.L_max)
-            print('capping ...')
             w_update, m_update, P_update = gauss_cap(w_update, m_update, P_update, self.L_max)
             L_cap = len(w_update)
 
@@ -265,7 +262,7 @@ class GMPHDFilter:
         P = np.empty((self.model.dim_state, self.model.dim_state, num_pred))
         I = np.eye(self.model.dim_state)
 
-        for i in range(len(m_predict)):
+        for i in range(num_pred):
             # predicted measurement mean, covariance
             mz = self.model.H.dot(m_predict[..., i])
             Pz = self.model.H.dot(P_predict[..., i]).dot(self.model.H.T) + self.model.R
