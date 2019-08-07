@@ -339,9 +339,8 @@ def gauss_merge(w, m, P, merge_threshold=4.0):
 
         # indices of mixture components too close to component with highest weight
         j = idx[np.argmax(w_i)]
-        iP_j = np.linalg.inv(P[..., j])
-        too_close_idx = [i for i in idx if  # TODO: pre-compute m_i - m_j before the list comprehension
-                         (m[:, i] - m[:, j]).T.dot(iP_j).dot(m[:, i] - m[:, j]) <= merge_threshold]
+        dm = scipy.linalg.solve_triangular(scipy.linalg.cholesky(P[..., j]), m[:, idx] - m[:, j, na])
+        too_close_idx = idx[np.sum(dm ** 2, axis=0) <= merge_threshold]
 
         # components to be merged
         w_el = w[too_close_idx]
