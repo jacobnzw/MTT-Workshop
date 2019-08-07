@@ -266,12 +266,16 @@ class GMPHDFilter:
             mz = self.model.H.dot(m_predict[..., i])
             Pz = self.model.H.dot(P_predict[..., i]).dot(self.model.H.T) + self.model.R
 
-            # Kalman gain
-            iPz = np.linalg.inv(Pz)  # FIXME replace this atrocity with cho_solve
-            K_gain = P_predict[..., i].dot(self.model.H.T).dot(iPz)
-
             for j in range(z.shape[1]):
                 qz[j, i] = scipy.stats.multivariate_normal.pdf(z[:, j], mz, Pz)
+
+            # Kalman gain NOTE: doesn't cover semi-definite Pz
+            # iPz = np.linalg.inv(Pz)
+            # K_gain = P_predict[..., i].dot(self.model.H.T).dot(iPz)
+            # K_gain = scipy.solve(Pz, self.model.H.dot(P_predict[..., i])).T
+            K_gain = scipy.linalg.cho_solve(scipy.linalg.cho_factor(Pz), self.model.H.dot(P_predict[..., i])).T
+
+            # updated state mean and covariance
             m[..., i] = m_predict[..., i, None] + K_gain.dot(z - mz[:, None])
             P[..., i] = (I - K_gain.dot(self.model.H)).dot(P_predict[..., i])
 
@@ -414,8 +418,8 @@ def unpack_matfile(mat_filename):
 
 if __name__ == '__main__':
     mod = Model()
-    # true_state = mod.gen_truth()
-    # meas = mod.gen_meas(true_state)
-    meas = unpack_matfile('gmphd_meas.mat')
+    true_state = mod.gen_truth()
+    meas = mod.gen_meas(true_state)
+    # meas = unpack_matfile('gmphd_meas.mat')
     filt = GMPHDFilter(mod)
     est_state = filt.filter(meas)
