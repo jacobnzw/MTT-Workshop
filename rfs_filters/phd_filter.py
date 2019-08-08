@@ -273,12 +273,16 @@ class GMPHDFilter:
             mz = self.model.H.dot(m_predict[..., i])
             Pz = self.model.H.dot(P_predict[..., i]).dot(self.model.H.T) + self.model.R
 
-            # Kalman gain
-            iPz = np.linalg.inv(Pz)  # FIXME replace this atrocity with cho_solve
-            K_gain = P_predict[..., i].dot(self.model.H.T).dot(iPz)
-
             for j in range(z.shape[1]):
                 qz[j, i] = scipy.stats.multivariate_normal.pdf(z[:, j], mz, Pz)
+
+            # Kalman gain NOTE: doesn't cover semi-definite Pz
+            # iPz = np.linalg.inv(Pz)
+            # K_gain = P_predict[..., i].dot(self.model.H.T).dot(iPz)
+            # K_gain = scipy.solve(Pz, self.model.H.dot(P_predict[..., i])).T
+            K_gain = scipy.linalg.cho_solve(scipy.linalg.cho_factor(Pz), self.model.H.dot(P_predict[..., i])).T
+
+            # updated state mean and covariance
             m[..., i] = m_predict[..., i, None] + K_gain.dot(z - mz[:, None])
             P[..., i] = (I - K_gain.dot(self.model.H)).dot(P_predict[..., i])
 
@@ -342,9 +346,8 @@ def gauss_merge(w, m, P, merge_threshold=4.0):
 
         # indices of mixture components too close to component with highest weight
         j = idx[np.argmax(w_i)]
-        iP_j = np.linalg.inv(P[..., j])
-        too_close_idx = [i for i in idx if  # TODO: pre-compute m_i - m_j before the list comprehension
-                         (m[:, i] - m[:, j]).T.dot(iP_j).dot(m[:, i] - m[:, j]) <= merge_threshold]
+        dm = scipy.linalg.solve_triangular(scipy.linalg.cholesky(P[..., j]), m[:, idx] - m[:, j, na])
+        too_close_idx = idx[np.sum(dm ** 2, axis=0) <= merge_threshold]
 
         # components to be merged
         w_el = w[too_close_idx]
