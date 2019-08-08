@@ -1,6 +1,8 @@
 import numpy as np
 import scipy.stats
+import matplotlib.pyplot as plt
 from numpy import newaxis as na
+from sklearn.externals import joblib
 
 """
 GMM-PHD filter [1]_ for linear motion/measurement model assuming no target spawning.
@@ -244,7 +246,7 @@ class GMPHDFilter:
             # STATE ESTIMATE EXTRACTION
             for i in (w_update > 0.5).nonzero()[0]:
                 num_targets = int(np.round(w_update[i]))
-                est['X'].append(np.tile(m_update[..., i], num_targets))
+                est['X'].append(np.tile(m_update[..., i], num_targets))  # TODO: suspicious!
                 est['N'][k] += num_targets
 
             # DIAGNOSTICS
@@ -417,15 +419,45 @@ def unpack_matfile(mat_filename):
     return meas
 
 
-if __name__ == '__main__':
-    mod = Model()
-    true_state = mod.gen_truth()
-    meas = mod.gen_meas(true_state)
-    # meas = unpack_matfile('gmphd_meas.mat')
-    filt = GMPHDFilter(mod)
-    est_state = filt.filter(meas)
+def plot_cardinality(true, estimated):
+    plt.figure()
+    plt.subplot(title='State RFS Cardinality')
+    plt.plot(true['N'], 'r-', label='true')
+    plt.plot(estimated['N'], 'k.', label='estimated')
+    plt.xlabel('time [k]')
+    plt.ylabel('# targets')
+    plt.legend()
+    plt.show()
 
-    # TODO: plot of true and estimated state RFS cardinality
+
+def plot_xy_time(true, estimated, measurement):
+    plt.subplot(2, 1, 1, title='XY position in Time')
+    not_nan = np.logical_not(np.isnan(true['X'][0]))
+    for target in range(true['X'].shape[-1]):
+        plt.plot(np.where(not_nan[:, target])[0], true['X'][0, not_nan[:, target], target], 'r-')
+        plt.plot(estimated['X'])
+
+    plt.subplot(2, 1, 2)
+    not_nan = np.logical_not(np.isnan(true['X'][2]))
+    for target in range(true['X'].shape[-1]):
+        plt.plot(np.where(not_nan[:, target])[0], true['X'][2, not_nan[:, target], target], 'r-')
+    plt.show()
+
+
+if __name__ == '__main__':
+    # mod = Model()
+    # true_state = mod.gen_truth()
+    # meas = mod.gen_meas(true_state)
+    # # meas = unpack_matfile('gmphd_meas.mat')
+    # filt = GMPHDFilter(mod)
+    # est_state = filt.filter(meas)
+    #
+    # joblib.dump({'state_true': true_state, 'state_estimated': est_state, 'measurement': meas}, 'plot_dump.dat')
+
+    dd = joblib.load('plot_dump.dat')
+    # plot_cardinality(dd['state_true'], dd['state_estimated'])
+    plot_xy_time(dd['state_true'], dd['state_estimated'], dd['measurement'])
+
     # TODO: plot of x and y coordinates in time (true, estimates, measurements)
     # TODO: x/y plot of ground truth tracks (multi-target states)
     # TODO: plot of OSPA metrics
