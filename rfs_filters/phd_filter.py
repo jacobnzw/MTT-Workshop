@@ -174,9 +174,13 @@ class GMPHDFilter:
 
     def filter(self, data):
         est = {
-            'X': [],  # np.empty(data['X'].shape) * np.nan
+            'X': np.frompyfunc(list, 0, 1)(np.empty((data['K'],), dtype=object)),
             'N': np.zeros((data['K'], ), dtype=np.int16),
         }
+
+        # list for gated measurements
+        data['Z_gated'] = list()
+
         # initial prior
         w_update = np.array([self.F_EPS])
         m_update = np.array([[0.1, 0, 0.1, 0]]).T
@@ -206,10 +210,11 @@ class GMPHDFilter:
             # GATING
             if self.gate_flag:
                 # do gating of measurement set
-                data['Z'][k] = self._gate_meas_gms(data['Z'][k], m_predict, P_predict)
+                z_gated = self._gate_meas_gms(data['Z'][k], m_predict, P_predict)
+            data['Z_gated'].append(z_gated)
 
             # UPDATE
-            num_obs = data['Z'][k].shape[1]  # number of measurements after gating
+            num_obs = z_gated.shape[1]  # number of measurements after gating
             # missed detection term
             w_update = self.model.Q_D * w_predict.copy()
             m_update = m_predict.copy()
@@ -217,7 +222,7 @@ class GMPHDFilter:
 
             if num_obs > 0:  # if some measurements were detected
                 # num_obs detection terms
-                qz_temp, m_temp, P_temp = self._kalman_update(data['Z'][k], m_predict, P_predict)
+                qz_temp, m_temp, P_temp = self._kalman_update(z_gated, m_predict, P_predict)
                 for i in range(num_obs):  # TODO: can be done w/o the loop!
                     w_temp = self.model.P_D * w_predict * qz_temp[i, :]
                     denom = self.model.lambda_c*self.model.pdf_c + sum(w_temp)
@@ -246,7 +251,8 @@ class GMPHDFilter:
             # STATE ESTIMATE EXTRACTION
             for i in (w_update > 0.5).nonzero()[0]:
                 num_targets = int(np.round(w_update[i]))
-                est['X'].append(np.tile(m_update[..., i], num_targets))  # TODO: suspicious!
+                # TODO: right now, appending arrays with varying # columns to a list => hard to plot
+                est['X'][k].append(np.tile(m_update[..., i, na], num_targets))
                 est['N'][k] += num_targets
 
             # DIAGNOSTICS
@@ -257,6 +263,11 @@ class GMPHDFilter:
                       'gm_orig = {:3d} | '
                       'gm_elim = {:3d} | '
                       'gm_merg = {:3d}'.format(k, sum(w_update), est['N'][k], L_posterior, L_prune, L_merge))
+
+        # convert list of arrays to one 2D array
+        # (each such array has varying # columns at each position in est['X'][k])
+        for k in range(data['K']):
+            est['X'][k] = np.concatenate(est['X'][k], axis=1) if len(est['X'][k]) > 0 else None
 
         return est
 
@@ -434,16 +445,44 @@ def plot_cardinality(true, estimated):
 
 
 def plot_xy_time(true, estimated, measurement):
+    # plot of the X-coordinate
     plt.subplot(2, 1, 1, title='XY position in Time')
     not_nan = np.logical_not(np.isnan(true['X'][0]))
     for target in range(true['X'].shape[-1]):
-        plt.plot(np.where(not_nan[:, target])[0], true['X'][0, not_nan[:, target], target], 'r-')
-        plt.plot(estimated['X'])
+        plt.plot(np.where(not_nan[:, target])[0], true['X'][0, not_nan[:, target], target], 'r--', lw=1, alpha=0.5)
+    for k in range(len(estimated['X'])):
+        # estimated target x-position
+        if estimated['X'][k] is not None:
+            num_targets = estimated['X'][k].shape[1]
+            plt.plot(num_targets*[k], estimated['X'][k][0, :], 'ko', ms=4)
+        # all measurements
+        num_measurements = measurement['Z'][k].shape[1]
+        if num_measurements > 0:
+            plt.plot(num_measurements*[k], measurement['Z'][k][0, :], 'k.', alpha=0.05)
+        # gated measurements
+        num_gated = measurement['Z_gated'][k].shape[1]
+        if num_gated > 0:
+            plt.plot(num_gated*[k], measurement['Z_gated'][k][0, :], color='blue', ls='', marker='.', alpha=0.4)
 
+    # plot of the Y-coordinate
     plt.subplot(2, 1, 2)
     not_nan = np.logical_not(np.isnan(true['X'][2]))
     for target in range(true['X'].shape[-1]):
-        plt.plot(np.where(not_nan[:, target])[0], true['X'][2, not_nan[:, target], target], 'r-')
+        plt.plot(np.where(not_nan[:, target])[0], true['X'][2, not_nan[:, target], target], 'r--', lw=1, alpha=0.5)
+    for k in range(len(estimated['X'])):
+        # estimated target x-position
+        if estimated['X'][k] is not None:
+            num_targets = estimated['X'][k].shape[1]
+            plt.plot(num_targets*[k], estimated['X'][k][2, :], 'ko', ms=4)
+        # all measurements
+        num_measurements = measurement['Z'][k].shape[1]
+        if num_measurements > 0:
+            plt.plot(num_measurements*[k], measurement['Z'][k][1, :], 'k.', alpha=0.05)
+        # gated measurements
+        num_gated = measurement['Z_gated'][k].shape[1]
+        if num_gated > 0:
+            plt.plot(num_gated*[k], measurement['Z_gated'][k][1, :], color='blue', ls='', marker='.', alpha=0.4)
+
     plt.show()
 
 
