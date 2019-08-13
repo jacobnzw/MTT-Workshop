@@ -492,44 +492,52 @@ def plot_cardinality(true, estimated):
 
 
 def plot_xy_time(true, estimated, measurement):
+    fig, ax = plt.subplots(2, 1, sharex=True)
     # plot of the X-coordinate
-    plt.subplot(2, 1, 1, title='XY position in Time')
+    ax[0].set_title('X-Position in Time')
     not_nan = np.logical_not(np.isnan(true['X'][0]))
     for target in range(true['X'].shape[-1]):
-        plt.plot(np.where(not_nan[:, target])[0], true['X'][0, not_nan[:, target], target], 'r--', lw=1, alpha=0.5)
+        ax[0].plot(np.where(not_nan[:, target])[0], true['X'][0, not_nan[:, target], target],
+                   'r--', lw=1, alpha=0.5, label='true position')
     for k in range(len(estimated['X'])):
         # estimated target x-position
         if estimated['X'][k] is not None:
             num_targets = estimated['X'][k].shape[1]
-            plt.plot(num_targets*[k], estimated['X'][k][0, :], 'ko', ms=4)
+            ax[0].plot(num_targets*[k], estimated['X'][k][0, :],
+                       'ko', ms=4, label='estimated position')
         # all measurements
         num_measurements = measurement['Z'][k].shape[1]
         if num_measurements > 0:
-            plt.plot(num_measurements*[k], measurement['Z'][k][0, :], 'k.', alpha=0.05)
+            ax[0].plot(num_measurements*[k], measurement['Z'][k][0, :],
+                       'k.', alpha=0.05, label='measurements')
         # gated measurements
         num_gated = measurement['Z_gated'][k].shape[1]
         if num_gated > 0:
-            plt.plot(num_gated*[k], measurement['Z_gated'][k][0, :], color='blue', ls='', marker='.', alpha=0.4)
+            ax[0].plot(num_gated*[k], measurement['Z_gated'][k][0, :],
+                       color='blue', ls='', marker='.', alpha=0.4, label='gated measurements')
+
+    label_list = ['true position', 'estimated position', 'measurements', 'gated measurements']
+    ax[0].legend([next(line for line in ax[0].lines if line._label == label) for label in label_list], label_list)
 
     # plot of the Y-coordinate
-    plt.subplot(2, 1, 2)
+    ax[1].set_title('Y-Position in Time')
     not_nan = np.logical_not(np.isnan(true['X'][2]))
     for target in range(true['X'].shape[-1]):
-        plt.plot(np.where(not_nan[:, target])[0], true['X'][2, not_nan[:, target], target], 'r--', lw=1, alpha=0.5)
+        ax[1].plot(np.where(not_nan[:, target])[0], true['X'][2, not_nan[:, target], target], 'r--', lw=1, alpha=0.5)
     for k in range(len(estimated['X'])):
         # estimated target x-position
         if estimated['X'][k] is not None:
             num_targets = estimated['X'][k].shape[1]
-            plt.plot(num_targets*[k], estimated['X'][k][2, :], 'ko', ms=4)
+            ax[1].plot(num_targets*[k], estimated['X'][k][2, :], 'ko', ms=4)
         # all measurements
         num_measurements = measurement['Z'][k].shape[1]
         if num_measurements > 0:
-            plt.plot(num_measurements*[k], measurement['Z'][k][1, :], 'k.', alpha=0.05)
+            ax[1].plot(num_measurements*[k], measurement['Z'][k][1, :], 'k.', alpha=0.05)
         # gated measurements
         num_gated = measurement['Z_gated'][k].shape[1]
         if num_gated > 0:
-            plt.plot(num_gated*[k], measurement['Z_gated'][k][1, :], color='blue', ls='', marker='.', alpha=0.4)
-
+            ax[1].plot(num_gated*[k], measurement['Z_gated'][k][1, :], color='blue', ls='', marker='.', alpha=0.4)
+    ax[1].set_xlabel('Time [k]')
     plt.show()
 
 
@@ -547,6 +555,5 @@ if __name__ == '__main__':
     # plot_cardinality(dd['state_true'], dd['state_estimated'])
     plot_xy_time(dd['state_true'], dd['state_estimated'], dd['measurement'])
 
-    # TODO: plot of x and y coordinates in time (true, estimates, measurements)
     # TODO: x/y plot of ground truth tracks (multi-target states)
     # TODO: plot of OSPA metrics
