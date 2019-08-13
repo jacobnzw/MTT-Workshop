@@ -1,6 +1,6 @@
 import unittest
 import numpy as np
-from phd_filter import gauss_merge
+from phd_filter import gauss_merge, ospa
 
 
 class GaussianMixtureTest(unittest.TestCase):
@@ -18,6 +18,14 @@ class GaussianMixtureTest(unittest.TestCase):
         self.assertTrue(np.array_equal(new_weights, np.array([0.5, 0.5])))
         self.assertTrue(np.array_equal(new_means, np.array([[0.0, 5.0], [0.2, 0]]).T))
         self.assertTrue(np.array_equal(new_covs, np.stack((np.eye(2), 0.45*np.eye(2)))))
+
+    def test_ospa(self):
+        # setup finite sets
+        x = np.array([[1, 0, 1, 0],
+                      [0, 1, 1, 0]], dtype=np.float)
+        y = np.array([[2, 0, 2, 0],
+                      [0, 2, 2, 0]], dtype=np.float)
+        print(ospa(x, y))
 
 
 if __name__ == '__main__':

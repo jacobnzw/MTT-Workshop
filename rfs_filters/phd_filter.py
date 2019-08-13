@@ -3,6 +3,7 @@ import scipy.stats
 import matplotlib.pyplot as plt
 from numpy import newaxis as na
 from sklearn.externals import joblib
+from scipy.optimize import linear_sum_assignment
 
 """
 GMM-PHD filter [1]_ for linear motion/measurement model assuming no target spawning.
@@ -431,6 +432,52 @@ def unpack_matfile(mat_filename):
         'Z': list(dd['meas'][0, 0][1][:, 0])
     }
     return meas
+
+
+def ospa(x, y, cutoff=100.0, p=1.0):
+    """
+    Optimal Subpattern Assignment (OSPA) distance between two finite sets.
+
+    Parameters
+    ----------
+    x : ndarray
+    y : ndarray
+        Finite sets as 2D arrays, where each column is an element.
+
+    cutoff : float
+        Cut off parameter.
+
+    p : float
+        p-parameter of the metric.
+
+    Returns
+    -------
+    dist : float
+    """
+
+    num_x, num_y = x.shape[1], y.shape[1]
+
+    # if both sets are empty
+    if num_x == 0 and num_y == 0:
+        return 0
+
+    # if at least one is empty
+    if num_x == 0 or num_y == 0:
+        return cutoff
+
+    # compute cost matrix
+    d = np.sqrt(np.sum((np.tile(x, num_y) - np.repeat(y, num_x, axis=1)) ** 2, axis=0))
+    d = d.reshape(num_x, num_y).T
+    d = np.minimum(d, cutoff) ** p
+
+    # solve optimal assignment using Hungarian algorithm
+    row_ind, col_ind = linear_sum_assignment(d)
+    # compute cost of the optimal assignment
+    cost = d[row_ind, col_ind].sum()
+
+    dist = ((cutoff ** p * np.abs(num_y - num_x) + cost) / np.max((num_y, num_x))) ** (1/p)
+
+    return dist
 
 
 def plot_cardinality(true, estimated):
